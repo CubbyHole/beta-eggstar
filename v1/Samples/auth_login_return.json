@@ -1,0 +1,30 @@
+{
+ "_id": "5304cbfe09413a381400002a",
+ "state": "ok",
+ "isAdmin": "false",
+ "name": "Trac",
+ "firstName": "Alba",
+ "password": "Sup1nfo#",
+ "email": "1256378@supinfo.com",
+ "geolocation": "somewhere",
+ "apiKey": "3456f1fdsq",
+ "account":
+ {
+    "_id": "5304cbfe09413a3814000029",
+    "state": "ok",
+    "storage": "5",
+    "ratio": "4",
+    "startDate": "11\/02\/2014",
+    "endDate": "11\/03\/2014",
+    "refPlan":
+    {
+        "_id": "52eb5e743263d8b6a4395df0",
+        "state": "ok",
+        "name": "free",
+        "price": "0",
+        "maxStorage": "5",
+        "bandwidth": "300",
+        "maxRatio": "2"
+    }
+ }
+}
