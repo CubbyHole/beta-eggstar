@@ -16,7 +16,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface
 
     /**
      * Constructeur:
-     * - Apelle le constructeur de AbstractManager (gestion des accès de la BDD).
+     * - Appelle le constructeur de AbstractManager (gestion des accès de la BDD).
      * - Initialise la collection refplan.
      * @author Alban Truc
      * @since 01/2014
@@ -29,11 +29,12 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface
 	}
 
     /**
-     * Retrouver un refPlan par son ID.
+     * - Retrouver un refPlan par son ID.
+     * - Gestion des erreurs.
      * @author Alban Truc
      * @param $id String|MongoId Identifiant unique du refPlan à trouver
      * @since 02/2014
-     * @return array
+     * @return array contenant le résultat de la requête ou le message d'erreur
      */
 
 	public function findById($id)
@@ -41,12 +42,12 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface
         /**
          * Doc du findOne: http://www.php.net/manual/en/mongo.tutorial.findone.php
          * Utilisé lorsqu'on attend un résultat unique (notre cas) ou si l'on ne veut que le 1er résultat.
-         * Les ID dans Mongo sont des objets MongoId: http://de3.php.net/manual/en/class.mongoid.php
+         * Les ID dans Mongo sont des objets MongoId: http://www.php.net/manual/en/class.mongoid.php
          */
 		$result = $this->refPlanCollection->findOne(array('_id' => new MongoId($id)));
 
         //Si un refPlan est trouvé
-		if($result)
+		if($result !== NULL)
 		{
             //Cast le MongoId en string
 			$result['_id'] = (string) $result['_id'];

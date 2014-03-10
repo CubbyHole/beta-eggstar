@@ -56,7 +56,7 @@ class Eggstar extends API
         $collection = $connection->nestbox->users;
 
         //On cherche l'utilisateur qui a l'apiKey renseignée
-        $user = $collection->findOne(array('name' => $apiKey));
+        $user = $collection->findOne(array('apiKey' => $apiKey));
 
         if($user) return TRUE;
         else return FALSE;
@@ -69,15 +69,15 @@ class Eggstar extends API
      * Utilisation:
      * localhost doit être remplacé par l'url du serveur.
      *  AUTHENTIFICATION:
-     *      GET http://localhost/eggstar/v1/users?email=125637@supinfo.com&password=zfije5rçf_heofuhf
+     *      GET http://localhost:8080/eggstar/v1/users?email=125637@supinfo.com&password=zfije5rçf_heofuhf
      *          Ici endpoint = users et il n'y a rien dans args.
      *          Les valeurs d'email et password sont stockées dans le tableau request.
      *          Il faut envoyer le password déjà chiffré.
      *  INSCRIPTION:
-     *      PUT http://localhost/eggstar/v1/users
+     *      PUT http://localhost:8080/eggstar/v1/users
      *          L'utilisateur à inscrire est envoyé en json dans le "request body".
      *          Les informations à envoyer sont: name, firstName, email et password.
-     *          Exemple: {"name":"Trac","firstName":"Alba","email":"1256378@supinfo.com","password":"Sup1nfo#"}
+     *          Exemple: {"name":"Trac","firstName":"Alba","email":"1256378@supinfo.com","password":"Sup1nfo#","geolocation":"somewhere"}
      *          Le mot de passe doit être envoyé déjà chiffré.
      * L'inscritpion et l'authentification retournent les informations de l'utilisateur, son compte et son refplan;
      * le tout en json.
@@ -110,12 +110,17 @@ class Eggstar extends API
                 //Le true permet de récupérer un tableau associatif plutôt qu'un objet
                 $content = json_decode($this->file, TRUE);
 
+                //Dans le cas où la géolocalisation n'est pas fournie
+                if(!(isset($content['geolocation'])) || empty($content['geolocation']))
+                    $content['geolocation'] = 'Not specified';
+
                 $userManager = new UserManager();
                 $result = $userManager->register(
                                                     $content['name'],
                                                     $content['firstName'],
                                                     $content['email'],
-                                                    $content['password']
+                                                    $content['password'],
+                                                    $content['geolocation']
                                                 );
 
                 return $result;

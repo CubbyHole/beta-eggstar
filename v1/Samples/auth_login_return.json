@@ -1,30 +1,32 @@
 {
- "_id": "5304cbfe09413a381400002a",
- "state": "ok",
- "isAdmin": "false",
- "name": "Trac",
- "firstName": "Alba",
- "password": "Sup1nfo#",
- "email": "1256378@supinfo.com",
- "geolocation": "somewhere",
- "apiKey": "3456f1fdsq",
- "account":
- {
-    "_id": "5304cbfe09413a3814000029",
+    "_id": "530cb1f009413abc2000002a",
     "state": "ok",
-    "storage": "5",
-    "ratio": "4",
-    "startDate": "11\/02\/2014",
-    "endDate": "11\/03\/2014",
-    "refPlan":
-    {
-        "_id": "52eb5e743263d8b6a4395df0",
+    "isAdmin": false,
+    "name": "Tre",
+    "firstName": "Albeea",
+    "password": "Sup1nfoéè",
+    "email": "12df8@supinfo.com",
+    "geolocation": "somewhere",
+    "apiKey": "032E02DD970B4C0E8027C9CD96FB8F53",
+    "account": {
+        "_id": "530cb1f009413abc20000029",
         "state": "ok",
-        "name": "free",
-        "price": "0",
-        "maxStorage": "5",
-        "bandwidth": "300",
-        "maxRatio": "2"
+        "storage": "5",
+        "ratio": "4",
+        "startDate": {
+            "timestamp": 1393340912,
+            "date": "2014-Feb-25",
+            "time": "15:08:32"
+        },
+        "endDate": "11\/03\/2014",
+        "refPlan": {
+            "_id": "52eb5e743263d8b6a4395df0",
+            "state": "ok",
+            "name": "free",
+            "price": "0",
+            "maxStorage": "5",
+            "bandwidth": "300",
+            "maxRatio": "2"
+        }
     }
- }
 }

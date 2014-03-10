@@ -44,7 +44,7 @@ abstract class API
         header('Access-Control-Allow-Methods: *');
 
         //Les données sont en JSON
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
 
         //Les arguments sont séparés par des /
         $this->args = explode('/', rtrim($request, '/'));
@@ -120,8 +120,13 @@ abstract class API
 
     private function _response($data, $status = 200)
     {
+        header('Content-Type: application/json; charset=utf-8');
         header('HTTP/1.1 '.$status.' '.$this->_requestStatus($status));
-        echo json_encode($data);
+
+        /** Cf. lien suivant pour les options utilisées:
+         * http://www.php.net/manual/en/json.constants.php
+         */
+        echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**

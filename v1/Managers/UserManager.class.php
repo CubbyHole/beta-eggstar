@@ -33,50 +33,74 @@ class UserManager extends AbstractManager implements UserManagerInterface
 	}
 
     /**
+     * - Génère un GUID
+     * - Supprime les tirets et accolades
+     * @author Alban Truc
+     * @since 23/02/2014
+     * @return String
+     */
+
+    public function generateGUID()
+    {
+        //http://www.php.net/manual/fr/function.com-create-guid.php
+        $guid = com_create_guid();
+
+        //caractères à enlever: -, { et }
+        $patterns = array('/{/', '/-/', '/}/');
+        $guid = preg_replace($patterns, '', $guid);
+
+        return $guid;
+    }
+
+    /**
      * - Insère un compte gratuit.
      * - Insère l'utilisateur qui va posséder ce compte.
-     * - Gestion des exceptions MongoCursor: http://de3.php.net/manual/en/class.mongocursorexception.php
-     * - Annule l'insertion du compte gratuit si l'insertion de l'utilisateur a échoué?
+     * - Gestion des exceptions MongoCursor: http://www.php.net/manual/en/class.mongocursorexception.php
+     * - Gestion des erreurs, avec notamment:
+     *       Annulation de l'insertion du compte gratuit si l'insertion de l'utilisateur a échoué
      * @author Alban Truc
      * @param $name
      * @param $firstName
      * @param $email
      * @param $password
+     * @param $geolocation
      * @since 02/2014
      * @return bool TRUE si l'insertion a réussi, FALSE sinon
      */
 
-	public function addFreeUser($name, $firstName, $email, $password)
+	public function addFreeUser($name, $firstName, $email, $password, $geolocation)
 	{
-		
 		//Caractéristiques du compte gratuit
-		$account = array(
-							'_id' => new MongoId(),
-							'state' => 'ok', //à changer?
-							'idRefPlan' => '52eb5e743263d8b6a4395df0', //id du plan gratuit
-							'storage' => '5', //à changer
-							'ratio' => '4', //à changer
-							'startDate' => '11/02/2014', //à changer, penser à utiliser MongoDate
-							'endDate' => '11/03/2014' //à changer, penser à utiliser MongoDate
-						);
+        $account = array
+        (
+            '_id' => new MongoId(),
+            'state' => 'ok', //à changer?
+            'idRefPlan' => '52eb5e743263d8b6a4395df0', //id du plan gratuit
+            'storage' => '5', //à changer
+            'ratio' => '4', //à changer
+            'startDate' => new MongoDate(), //http://www.php.net/manual/en/class.mongodate.php
+            'endDate' => '11/03/2014' //à changer, penser à utiliser MongoDate
+        );
 							
 		$isAccountAdded = $this->accountManager->createAccount($account);
 			
 		if($isAccountAdded == TRUE) //inutile d'ajouter un utilisateur si l'ajout d'account a échoué
 		{
 			//Caractéristiques de l'utilisateur
-			$user = array(
-							'_id' => new MongoId(),
-							'state' => 'ok', //à changer?
-							'isAdmin' => 'false', //à changer? Y a-t-il une classe Mongo pour les booléens?
-							'idAccount' => $account['_id'],
-							'name' => $name,
-							'firstName' => $firstName,
-							'password' => $password,
-							'email' => $email,
-							'geolocation' => 'somewhere', //à changer, utiliser mon code de géolocalisation
-							'apiKey' => '3456f1fdsq', //utiliser du GUID
-						 );
+            $user = array
+            (
+                '_id' => new MongoId(),
+                'state' => 'ok', //à changer?
+                'isAdmin' => false,
+                'idAccount' => $account['_id'],
+                'name' => $name,
+                'firstName' => $firstName,
+                'password' => $password,
+                'email' => $email,
+                'geolocation' => $geolocation,
+                'apiKey' => self::generateGUID()
+            );
+
 			try
 			{
                 /**
@@ -98,10 +122,24 @@ class UserManager extends AbstractManager implements UserManagerInterface
              */
 			if(!(empty($info)) && $info['ok'] == '1' && $info['err'] === NULL) return TRUE;
 
-			else //échec de l'insertion de l'utilisateur
+			else //échec de l'insertion de l'utilisateur - updated 23/02/2014
 			{
-				//annuler l'insertion de l'account?
-				return array('error' => $info['err']);
+				$error = array('error' => $info['err']);
+
+				//annuler l'insertion de l'account
+                $removeInfo = $this->accountManager->removeAccount($account['_id']);
+
+                if($removeInfo)
+                {
+                    $error['error'] .= 'The account created for this user has been removed successfully.';
+                    return $error;
+                }
+				else
+                {
+                    $error['error'] .= 'The account created for this user has not been removed successfully: '
+                                        .$removeInfo;   //contient le détail de l'erreur de suppression
+                    return $error;
+                }
 			}
 		}
 		else return $isAccountAdded; //Message d'erreur approprié
@@ -117,7 +155,7 @@ class UserManager extends AbstractManager implements UserManagerInterface
      * @param $email
      * @param $password
      * @since 02/2014
-     * @return array des infos de l'user et son compte | array contenant le message d'erreur
+     * @return array des infos de l'user et son compte ou array contenant le message d'erreur
      */
 
     public function authenticate($email, $password)
@@ -157,7 +195,7 @@ class UserManager extends AbstractManager implements UserManagerInterface
             }
             else
             {
-                $errorInfo = 'Password given ('.$password.') does not match with password in database ('.$result['password'].')';
+                $errorInfo = 'Password given ('.$password.') does not match with password in database.';
                 return array('error' => $errorInfo);
             }
 		}
@@ -198,31 +236,32 @@ class UserManager extends AbstractManager implements UserManagerInterface
      * @param $firstName
      * @param $email
      * @param $password
+     * @param $geolocation
      * @since 02/2014
-     * @return array
+     * @return array contenant le résultat de la requête ou le message d'erreur
      *
      * IMPORTANT: ne pas oublier de gérer l'envoi d'e-mail d'inscription!
      */
 
-    public function register($name, $firstName, $email, $password)
+    public function register($name, $firstName, $email, $password, $geolocation)
 	{
 		if( 
-			!(empty($name)) &&
+			!(empty($name)) &&      //http://www.php.net/manual/en/function.empty.php
 			!(empty($firstName)) &&
 			!(empty($email)) &&
 			!(empty($password))
 		   )
 		{
 			if(
-				strlen($email) <= 26 &&
-				filter_var($email, FILTER_VALIDATE_EMAIL) && //http://in2.php.net/manual/en/function.filter-var.php
+				strlen($email) <= 26 && //http://www.php.net/manual/en/function.strlen.php
+				filter_var($email, FILTER_VALIDATE_EMAIL) && //http://www.php.net/manual/en/function.filter-var.php
 				(2 <= strlen($name) && strlen($name) <= 15) &&
 				(2 <= strlen($firstName) && strlen($firstName) <= 15)
 			   )
 			{
                 if(self::checkEmailAvailability($email) != FALSE)
 				{
-					$isRegisterValid = self::addFreeUser($name, $firstName, $email, $password);
+					$isRegisterValid = self::addFreeUser($name, $firstName, $email, $password, $geolocation);
 					
 					if($isRegisterValid == TRUE)
 					{
@@ -238,7 +277,7 @@ class UserManager extends AbstractManager implements UserManagerInterface
 			}
             else
             {
-                $errorInfo = 'E-mail address not valid or lenght specifications not respected';
+                $errorInfo = 'E-mail address not valid or length specifications not respected';
                 return array('error' => $errorInfo);
             }
 		}
