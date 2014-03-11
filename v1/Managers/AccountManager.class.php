@@ -35,9 +35,9 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
      * - Retrouver un account par son ID. Inclut le refPlan de l'account dans le retour.
      * - Gestion des erreurs
      * @author Alban Truc
-     * @param $id String|MongoId Identifiant unique de l'account à trouver
+     * @param string|MongoId $id Identifiant unique de l'account à trouver
      * @since 02/2014
-     * @return FALSE|array contenant le résultat de la requête
+     * @return array contenant le résultat de la requête ou le message d'erreur
      */
 
     public function findById($id)
@@ -105,7 +105,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
      * - Gestion des erreurs
      * - On n'insert pas de nouveau refPlan, ceux-ci sont déjà définis en base.
      * @author Alban Truc
-     * @param $account array
+     * @param array $account
      * @since 02/2014
      * @return TRUE|array contenant le message d'erreur dans un indexe 'error'
      */
@@ -142,7 +142,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
      * - Gestion des exceptions MongoCursor: http://www.php.net/manual/en/class.mongocursorexception.php
      * - Gestion des erreurs
      * @author Alban Truc
-     * @param MongoID|String $id
+     * @param MongoID|string $id
      * @since 23/02/2014
      * @return TRUE|array contenant le message d'erreur dans un indexe 'error'
      */

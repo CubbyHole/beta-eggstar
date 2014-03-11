@@ -14,8 +14,8 @@ interface UserManagerInterface
      *  - Vérifie le mot de passe. S'il correspond:
      *      - Récupère son compte
      * @author Alban Truc
-     * @param $email
-     * @param $password
+     * @param string $email
+     * @param string $password
      * @since 02/2014
      * @return array des infos de l'user et son compte ou array contenant le message d'erreur
      */
@@ -29,11 +29,11 @@ interface UserManagerInterface
      * - Appelle la fonction d'ajout d'un free user
      * - Appelle la fonction d'authentification qui retourne (si tout va bien) l'utilisateur inscrit à l'instant
      * @author Alban Truc
-     * @param $name
-     * @param $firstName
-     * @param $email
-     * @param $password
-     * @param $geolocation
+     * @param string $name
+     * @param string $firstName
+     * @param string $email
+     * @param string $password
+     * @param string $geolocation
      * @since 02/2014
      * @return array contenant le résultat de la requête ou le message d'erreur
      *
@@ -49,11 +49,11 @@ interface UserManagerInterface
      * - Gestion des erreurs, avec notamment:
      *       Annulation de l'insertion du compte gratuit si l'insertion de l'utilisateur a échoué
      * @author Alban Truc
-     * @param $name
-     * @param $firstName
-     * @param $email
-     * @param $password
-     * @param $geolocation
+     * @param string $name
+     * @param string $firstName
+     * @param string $email
+     * @param string $password
+     * @param string $geolocation
      * @since 02/2014
      * @return bool TRUE si l'insertion a réussi, FALSE sinon
      */
@@ -63,7 +63,7 @@ interface UserManagerInterface
     /**
      * Vérifier la disponibilité d'une adresse e-mail
      * @author Alban Truc
-     * @param $email
+     * @param string $email
      * @since 02/2014
      * @return bool FALSE si email déjà prise, TRUE sinon
      */
@@ -75,7 +75,7 @@ interface UserManagerInterface
      * - Supprime les tirets et accolades
      * @author Alban Truc
      * @since 23/02/2014
-     * @return String
+     * @return string
      */
 
     public function generateGUID();

@@ -12,7 +12,7 @@ interface RefPlanManagerInterface
      * - Retrouver un refPlan par son ID.
      * - Gestion des erreurs.
      * @author Alban Truc
-     * @param $id String|MongoId Identifiant unique du refPlan à trouver
+     * @param string|MongoId $id Identifiant unique du refPlan à trouver
      * @since 02/2014
      * @return array contenant le résultat de la requête ou le message d'erreur
      */

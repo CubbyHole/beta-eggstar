@@ -42,7 +42,7 @@ abstract class AbstractManager
     /**
      * @author Alban Truc
      * @since 30/01/14
-     * @return mixed
+     * @return mixed instance de la classe
      */
 
     static public function instantiate()
@@ -59,7 +59,7 @@ abstract class AbstractManager
      * @author Alban Truc
      * @param $name
      * @since 30/01/14
-     * @return mixed Renvoie la collection voulue
+     * @return MongoCollection Renvoie la collection voulue
      */
 
     public function getCollection($name)

@@ -19,7 +19,7 @@ abstract class API
     /**
      * Ce qu'il y a en plus après que le endpoint ait été retiré, par exemple un ID.
      * Structure: /<endpoint>/<arg0>/<arg1>/.../<argN>
-     * or /<endpoint>/<arg0>
+     * ou /<endpoint>/<arg0>
      */
     protected $args = Array();
 
@@ -31,8 +31,9 @@ abstract class API
      * - Autorise les requêtes quelque soit leur origine (Cross-Origin Resource Sharing).
      * - Formate les données de la requête
      * @author Alban Truc
-     * @param $request Array Tableau contenant la requête.
+     * @param array $request Tableau contenant la requête.
      * @since 19/02/2014
+     * @throws Exception
      */
 
     public function __construct($request)
@@ -113,7 +114,7 @@ abstract class API
     /**
      * Renvoie le statut de la réponse dans les headers et affiche les données encodées en JSON.
      * @author Alban Truc
-     * @param $data Array Données à retourner au client
+     * @param array $data Données à retourner au client
      * @param int $status Statut HTTP
      * @since 19/02/2014
      */
@@ -132,9 +133,9 @@ abstract class API
     /**
      * Empêche l'injection de code malicieux.
      * @author http://css-tricks.com/snippets/php/sanitize-database-inputs/
-     * @param $data String Données envoyées
+     * @param string $data Données envoyées
      * @since 19/02/2014
-     * @return String Données nettoyées
+     * @return string Données nettoyées
      */
 
     private function _cleanInput($data)
@@ -155,7 +156,7 @@ abstract class API
     /**
      * Pour protéger la base de données. Fait appel à cleanInput($data) si $data n'est pas un tableau.
      * @author Alban Truc
-     * @param $data Array|String Données envoyées
+     * @param array|string $data Données envoyées
      * @since 19/02/2014
      * @return array|mixed Données nettoyées
      */
@@ -183,9 +184,9 @@ abstract class API
 
     /**
      * @author Alban Truc
-     * @param $code Int Code de statut HTTP
+     * @param int $code Code de statut HTTP
      * @since 19/02/2014
-     * @return String Code "compréhensible" par l'humain
+     * @return string Code "compréhensible" par l'humain
      */
 
     private function _requestStatus($code)

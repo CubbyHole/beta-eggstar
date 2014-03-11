@@ -16,14 +16,15 @@ class Eggstar extends API
      * Vérifie la présence d'une clé d'API valide dans le cas où le endpoint n'est PAS users.
      * De fait, on ne peut pas demander de clé d'API à quelqu'un qui cherche à s'inscrire ou s'authentifier.
      * @author Alban Truc
-     * @param $request Array Tableau contenant la requête.
-     * @param $origin Array Permet d'identifier l'origine de la requête, pour l'instant inutilisé.
+     * @param array $request Tableau contenant la requête.
+     * @param array $origin Permet d'identifier l'origine de la requête, pour l'instant inutilisé.
      * @since 19/02/2014
+     * @throws Exception
      */
 
     public function __construct($request, $origin)
     {
-        //Apelle le constructeur de la classe API
+        //Appelle le constructeur de la classe API
         parent::__construct($request);
 
         if($this->endpoint != 'users')
@@ -42,7 +43,7 @@ class Eggstar extends API
     /**
      * Vérifie la validité d'une clé d'API.
      * @author Alban Truc
-     * @param $apiKey String Chaîne contenant la clé d'API
+     * @param string $apiKey Chaîne contenant la clé d'API
      * @since 19/02/2014
      * @return bool TRUE si la clé est valide.
      */
