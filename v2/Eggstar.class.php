@@ -96,31 +96,6 @@ class Eggstar extends API
                 return $user;
             }
         }
-        //Cas d'une demande d'inscription
-        else if($this->method == 'PUT')
-        {
-            //L'utilisateur à inscrire se trouve dans cette variable
-            if(isset($this->file) && $this->file != '')
-            {
-                //Le true permet de récupérer un tableau associatif plutôt qu'un objet
-                $content = json_decode($this->file, TRUE);
-
-                //Dans le cas où la géolocalisation n'est pas fournie
-                if(!(isset($content['geolocation'])) || empty($content['geolocation']))
-                    $content['geolocation'] = 'Not specified';
-
-                $userManager = new UserManager();
-                $result = $userManager->register(
-                                                    $content['name'],
-                                                    $content['firstName'],
-                                                    $content['email'],
-                                                    $content['password'],
-                                                    $content['geolocation']
-                                                );
-
-                return $result;
-            }
-        }
         return 0;
     }
 } 
