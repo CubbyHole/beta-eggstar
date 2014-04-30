@@ -13,8 +13,8 @@ class Eggstar extends API
 
     /**
      * Constructeur de la classe Eggstar.
-     * Vérifie la présence d'une clé d'API valide dans le cas où le endpoint n'est PAS users.
-     * De fait, on ne peut pas demander de clé d'API à quelqu'un qui cherche à s'inscrire ou s'authentifier.
+     * Vérifie la présence d'une clé d'API valide dans le cas où il ne s'agit pas d'une authentification.
+     * De fait, on ne peut pas demander de clé d'API à quelqu'un qui cherche à s'authentifier.
      * @author Alban Truc
      * @param array $request Tableau contenant la requête.
      * @param array $origin Permet d'identifier l'origine de la requête, pour l'instant inutilisé.
@@ -27,16 +27,15 @@ class Eggstar extends API
         //Appelle le constructeur de la classe API
         parent::__construct($request);
 
-        if($this->endpoint != 'users')
+        if($this->endpoint != 'users' || ($this->endpoint == 'users' && $this->method != 'GET'))
         {
             if (!array_key_exists('apiKey', $this->request))
 
                 throw new Exception('No API Key provided');
 
-            else if (!$this->verifyKey($this->request['apiKey']))
+            else if ($this->verifyKey($this->request['apiKey']) !== TRUE)
 
                 throw new Exception('Invalid API Key');
-
         }
     }
 
@@ -50,17 +49,13 @@ class Eggstar extends API
 
     private function verifyKey($apiKey)
     {
-        //Connexion locale sur le port 27017
-        $connection = new MongoClient();
+        $userManager = new UserManager();
+        $user = $userManager->findOne(array('apiKey' => $apiKey));
 
-        //Sélection de la base de données et de la collection
-        $collection = $connection->nestbox->users;
-
-        //On cherche l'utilisateur qui a l'apiKey renseignée
-        $user = $collection->findOne(array('apiKey' => $apiKey));
-
-        if($user) return TRUE;
-        else return FALSE;
+        if(!(isset($user['error']))) //Si un utilisateur avec cette clé existe = la clé fournie est valide
+            return TRUE;
+        else
+            return $user;
     }
 
     /**
@@ -94,6 +89,65 @@ class Eggstar extends API
                 $user = $userManager->authenticate($email, $password);
 
                 return $user;
+            }
+        }
+        return 0;
+    }
+
+    protected function elements()
+    {
+        if($this->method == 'GET')
+        {
+            //cas de demande de récupération des éléments d'un utilisateur
+            if(isset($this->request['idUser']) && isset($this->request{'isOwner'}))
+            {
+                $idUser = $this->request['idUser'];
+                $isOwner = (bool)$this->request['isOwner'];
+
+                //cas de récupération des éléments dans l'utilisateur est le propriétaire
+                if($isOwner === TRUE)
+                {
+                    //Remarque: on pourrait mettre le tout dans une fonction (dans l'elementManager par exemple).
+                    $criteria = array(
+                        'state' => (int)1,
+                        'idOwner' => $idUser
+                    );
+
+                    //récupérations des éléments
+                    $elementManager = new ElementManager();
+                    $elements = $elementManager->find($criteria);
+
+                    $refElementManager = new RefElementManager();
+
+                    //récupération des refElement pour chaque élément
+                    foreach($elements as $key => $element)
+                    {
+                        unset($element['idOwner']);
+
+                        $refElement = $refElementManager->findById($element['idRefElement']);
+
+                        unset($element['idRefElement']);
+
+                        $element['refElement'] = $refElement;
+
+                        $elements[$key] = $element;
+                    }
+
+                    return $elements;
+                    //récup refelement
+                }
+                //cas de récupération des éléments partagés avec l'utilisateur par d'autres
+                else if($isOwner === FALSE)
+                {
+                    //Remarque: on pourrait mettre le tout dans une fonction (dans l'elementManager par exemple).
+                    $criteria = array(
+                        'state' => (int)1,
+                        'idUser' => $idUser
+                    );
+                    //requête dans collection right
+                    //récup refright, element, refElement, user proprio
+                }
+                else return array('error' => 'Parameter isOwner must be true or false');
             }
         }
         return 0;
