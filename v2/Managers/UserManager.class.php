@@ -25,17 +25,10 @@ class UserManager extends AbstractManager implements UserManagerInterface{
     /** @var MongoCollection $userCollection collection user */
 	protected $userCollection;
 
-    /** @var AccountManager $accountManager instance de cette classe */
-	protected $accountManager;
-
-    /** @var RefPlanManager $refPlanManager instance de cette classe */
-    protected $refPlanManager;
-
     /**
      * Constructeur:
      * - Apelle le constructeur de {@see AbstractManager::__construct} (gestion des accès de la BDD).
      * - Initialise la collection user.
-     * - Crée un objet AccountManager ou utilise une référence d'une instance de cet objet
      * @author Alban Truc
      * @since 01/2014
      */
@@ -44,21 +37,28 @@ class UserManager extends AbstractManager implements UserManagerInterface{
     {
         parent::__construct();
         $this->userCollection = $this->getCollection('user');
+    }
 
-        $numberOfArgs = func_num_args();
+    /**
+     * Modifications de certaines données
+     * @author Alban Truc
+     * @param array $user
+     * @since 30/04/2014
+     * @return array
+     */
 
-        switch($numberOfArgs)
+    public function convert($user)
+    {
+        if(is_array($user))
         {
-            case 1:
-                $accountManager = func_get_arg(0);
-                $this->accountManager = &$accountManager;
-                break;
-            default:
-                $this->accountManager = new AccountManager();
-                break;
+            if(isset($user['_id']))
+                $user['_id'] = (string)$user['_id']; // MongoId => string
+
+            if(isset($user['idCurrentAccount']))
+                $user['idCurrentAccount'] = (string)$user['idCurrentAccount']; // MongoId => string
         }
 
-        $this->refPlanManager = new RefPlanManager();
+        return $user;
     }
 
     /**
@@ -80,6 +80,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
             foreach($cursor as $user)
             {
+                $user = self::convert($user);
                 $users[] = $user;
             }
 
@@ -103,6 +104,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
     public function findOne($criteria, $fieldsToReturn = array())
     {
         $result = parent::__findOne('user', $criteria, $fieldsToReturn);
+        $result = self::convert($result);
 
         return $result;
     }
@@ -126,6 +128,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
             foreach($cursor as $user)
             {
+                $user = self::convert($user);
                 $users[] = $user;
             }
         }
@@ -149,6 +152,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
     public function findById($id, $fieldsToReturn = array())
     {
         $result = parent::__findOne('user', array('_id' => new MongoId($id)));
+        $result = self::convert($result);
 
         return $result;
     }
@@ -169,6 +173,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
         $result = parent::__findAndModify('user', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
+        $result = self::convert($result);
 
         return $result;
     }
@@ -255,26 +260,23 @@ class UserManager extends AbstractManager implements UserManagerInterface{
                     '_id' => new MongoId($user['idCurrentAccount']),
                     'state' => (int)1
                 );
-                $account = $this->accountManager->findOne($accountCriteria);
+                $accountManager = new AccountManager();
+                $account = $accountManager->findOne($accountCriteria);
 
                 if(!(isset($account['error']))) //Si le compte existe
                 {
-                    $refPlan = $this->refPlanManager->findById($account['idRefPlan']);
+                    $refPlanManager = new RefPlanManager();
+                    $refPlan = $refPlanManager->findById($account['idRefPlan']);
 
                     if(!(isset($refPlan['error'])))
                     {
-                        $account['_id'] = (string)$account['_id'];
-
                         unset($account['idRefPlan']);
-                        $refPlan['_id'] = (string)$refPlan['_id'];
+                        unset($account['idUser']);
+
                         $account['refPlan'] = $refPlan;
 
-                        $account['startDate'] = parent::formatMongoDate($account['startDate']);
-                        $account['endDate'] = parent::formatMongoDate($account['endDate']);
-
-                        $user['_id'] = (string)$user['_id'];
-
                         unset($user['idCurrentAccount']);
+
                         $user['account'] = $account;
 
                         return $user;

@@ -13,6 +13,17 @@
  */
 interface AccountManagerInterface
 {
+
+    /**
+     * Modifications de certaines données
+     * @author Alban Truc
+     * @param array $account
+     * @since 30/04/2014
+     * @return array
+     */
+
+    function convert($account);
+
     /**
      * Retrouver un Account selon des critères donnés
      * @author Alban Truc

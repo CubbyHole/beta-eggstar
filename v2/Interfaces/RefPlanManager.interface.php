@@ -14,6 +14,16 @@
 interface RefPlanManagerInterface
 {
     /**
+     * Modifications de certaines données
+     * @author Alban Truc
+     * @param array $refPlan
+     * @since 30/04/2014
+     * @return array
+     */
+
+    function convert($refPlan);
+
+    /**
      * Retrouver un refPlan selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche

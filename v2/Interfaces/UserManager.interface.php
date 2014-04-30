@@ -14,6 +14,16 @@
 interface UserManagerInterface
 {
     /**
+     * Modifications de certaines données
+     * @author Alban Truc
+     * @param array $user
+     * @since 30/04/2014
+     * @return array
+     */
+
+    function convert($user);
+
+    /**
      * Retrouver un User selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche

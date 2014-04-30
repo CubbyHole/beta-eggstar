@@ -37,6 +37,25 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 	}
 
     /**
+     * Modifications de certaines données
+     * @author Alban Truc
+     * @param array $refPlan
+     * @since 30/04/2014
+     * @return array
+     */
+
+    public function convert($refPlan)
+    {
+        if(is_array($refPlan))
+        {
+            if(isset($refPlan['_id']))
+                $refPlan['_id'] = (string)$refPlan['_id']; // MongoId => string
+        }
+
+        return $refPlan;
+    }
+
+    /**
      * Retrouver un refPlan selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -55,6 +74,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
             foreach($cursor as $refPlan)
             {
+                $refPlan = self::convert($refPlan);
                 $refPlans[] = $refPlan;
             }
 
@@ -78,6 +98,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
     public function findOne($criteria, $fieldsToReturn = array())
     {
         $result = parent::__findOne('refplan', $criteria, $fieldsToReturn);
+        $result = self::convert($result);
 
         return $result;
     }
@@ -95,6 +116,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
     public function findById($id, $fieldsToReturn = array())
 	{
         $result = parent::__findOne('refplan', array('_id' => new MongoId($id)));
+        $result = self::convert($result);
 
         return $result;
 	}
@@ -126,6 +148,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
             foreach($cursor as $refPlan)
             {
+                $refPlan = self::convert($refPlan);
                 $freePlans[] = $refPlan;
             }
 
@@ -160,6 +183,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
             foreach($cursor as $refPlan)
             {
+                $refPlan = self::convert($refPlan);
                 $premiumPlans[] = $refPlan;
             }
 
@@ -190,6 +214,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
             foreach($cursor as $refPlan)
             {
+                $refPlan = self::convert($refPlan);
                 $plans[] = $refPlan;
             }
         }
@@ -216,6 +241,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
         $result = parent::__findAndModify('refplan', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
+        $result = self::convert($result);
 
         return $result;
     }

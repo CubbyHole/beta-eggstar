@@ -25,18 +25,10 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
     /** @var MongoCollection $accountCollection collection account */
     protected $accountCollection;
 
-    /** @var  UserManager $userManager instance de cette classe */
-    protected $userManager;
-
-    /** @var RefPlanManager $refPlanManager instance de cette classe */
-    protected $refPlanManager;
-
     /**
      * Constructeur:
      * - Appelle le constructeur de {@see AbstractManager::__construct} (gestion des accès de la BDD).
      * - Initialise la collection account.
-     * - Crée un objet RefPlanManager (l'account a une clé étrangère de refPlan).
-     * - Crée un objet UserManager (l'account a une clé étrangère de user).
      * @author Alban Truc
      * @since 01/2014
      */
@@ -45,15 +37,39 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
     {
         parent::__construct();
         $this->accountCollection = $this->getCollection('account');
-        /**
-         * Le UserManager nécessite l'AccountManager qui nécessite le UserManager...
-         * Pour éviter un appel infini entre ces deux constructeurs:
-         * - je passe ici l'instance actuelle d'AccountManager au constructeur de UserManager
-         * - le constructeur UserManager se chargera ensuite de distinguer s'il doit créer une nouvelle instance
-         * d'AccountManager ou utiliser une référence. {@see UserManager::__construct}
-         */
-        $this->userManager = new UserManager($this);
-        $this->refPlanManager = new RefPlanManager();
+    }
+
+    /**
+     * Modifications de certaines données
+     * @author Alban Truc
+     * @param array $account
+     * @since 30/04/2014
+     * @return array
+     */
+
+    public function convert($account)
+    {
+        if(is_array($account))
+        {
+            if(isset($account['_id']))
+                $account['_id'] = (string)$account['_id']; // MongoId => string
+
+            if(isset($account['idUser']))
+                $account['idUser'] = (string)$account['idUser']; // MongoId => string
+
+            if(isset($account['idRefPlan']))
+                $account['idRefPlan'] = (string)$account['idRefPlan']; // MongoId => string
+
+            //Dates: timestamp => array contenant timestamp, date formatée et heure formatée
+
+            if(isset($account['startDate']))
+                $account['startDate'] = parent::formatMongoDate($account['startDate']);
+
+            if(isset($account['endDate']))
+                $account['endDate'] = parent::formatMongoDate($account['endDate']);
+        }
+
+        return $account;
     }
 
     /**
@@ -75,6 +91,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
             foreach($cursor as $account)
             {
+                $account = self::convert($account);
                 $accounts[] = $account;
             }
 
@@ -98,7 +115,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
     public function findOne($criteria, $fieldsToReturn = array())
     {
         $result = parent::__findOne('account', $criteria, $fieldsToReturn);
-
+        $result = self::convert($result);
         return $result;
     }
 
@@ -121,6 +138,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
             foreach($cursor as $account)
             {
+                $account = self::convert($account);
                 $accounts[] = $account;
             }
         }
@@ -144,6 +162,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
     public function findById($id, $fieldsToReturn = array())
     {
         $result = parent::__findOne('account', array('_id' => new MongoId($id)));
+        $result = self::convert($result);
 
         return $result;
     }
@@ -164,6 +183,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
         $result = parent::__findAndModify('account', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
+        $result = self::convert($result);
 
         return $result;
     }
