@@ -62,7 +62,7 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @return array
      */
 
-    function find($criteria, $fieldsToReturn = array())
+    public function find($criteria, $fieldsToReturn = array())
     {
         $cursor = parent::__find('refelement', $criteria, $fieldsToReturn);
 
@@ -93,7 +93,7 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @return array
      */
 
-    function findOne($criteria, $fieldsToReturn = array())
+    public function findOne($criteria, $fieldsToReturn = array())
     {
         $result = parent::__findOne('refelement', $criteria, $fieldsToReturn);
         $result = self::convert($result);
@@ -111,7 +111,7 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @return array contenant le message d'erreur
      */
 
-    function findById($id, $fieldsToReturn = array())
+    public function findById($id, $fieldsToReturn = array())
     {
         $result = parent::__findOne('refelement', array('_id' => new MongoId($id)));
         $result = self::convert($result);
@@ -128,7 +128,7 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @return array tableau d'objets RefElement
      */
 
-    function findAll($fieldsToReturn = array())
+    public function findAll($fieldsToReturn = array())
     {
         $cursor = parent::__find('refelement', array());
 
@@ -162,7 +162,7 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @return array
      */
 
-    function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
+    public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
         $result = parent::__findAndModify('refelement', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
@@ -180,7 +180,7 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @return TRUE|array contenant le message d'erreur dans un indexe 'error'
      */
 
-    function create($document, $options = array('w' => 1))
+    public function create($document, $options = array('w' => 1))
     {
         $result = parent::__create('refelement', $document, $options);
 
@@ -197,7 +197,7 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @return TRUE|array contenant le message d'erreur dans un indexe 'error'
      */
 
-    function update($criteria, $update, $options = array('w' => 1))
+    public function update($criteria, $update, $options = array('w' => 1))
     {
         $result = parent::__update('refelement', $criteria, $update, $options);
 
@@ -213,7 +213,8 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
      * @since 11/03/2014
      * @return TRUE|array contenant le message d'erreur dans un indexe 'error'
      */
-    function remove($criteria, $options = array('w' => 1))
+
+    public function remove($criteria, $options = array('w' => 1))
     {
         $result = parent::__remove('refelement', $criteria, $options);
 
