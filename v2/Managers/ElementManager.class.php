@@ -338,13 +338,13 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
                     else
                     {
                         unset($rights[$key]);
-                        break;
+                        continue;
                     }
                 }
                 else
                 {
                     unset($rights[$key]);
-                    break;
+                    continue;
                 }
 
                 /*
@@ -372,7 +372,7 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
                 else
                 {
                     unset($rights[$key]);
-                    break;
+                    continue;
                 }
 
                 //Récupération du refRight. S'il n'existe pas on enlève ce droit de la liste.
@@ -386,7 +386,7 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
                 else
                 {
                     unset($rights[$key]);
-                    break;
+                    continue;
                 }
 
                 $rights[$key] = $right;
