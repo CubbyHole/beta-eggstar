@@ -118,4 +118,28 @@ interface ElementManagerInterface
      */
 
     function remove($criteria, $options = array('w' => 1));
+
+    /**
+     * - Distingue deux cas: récupération des éléments d'un utilisateur et récupération des éléments partagés avec un utilisateur
+     * - Dans le 1er cas (isOwner = true), on retourne les infos de l'élément et du refElement
+     * - Dans le second cas (isOwner = false), on retourne le droit, le refRight, l'élément, le refElement et le propriétaire
+     * - Gestion des erreurs
+     * @author Alban Truc
+     * @param string|MongoId $idUser
+     * @param bool $isOwner
+     * @since 01/05/2014
+     * @return array
+     */
+
+    function returnElementsDetails($idUser, $isOwner);
+
+    /**
+     * Retourne le droit, le refRight, l'élément, le refElement et le propriétaire
+     * @author Alban Truc
+     * @param string|MongoId $idUser
+     * @since 01/05/2014
+     * @return array
+     */
+
+    function returnSharedElementsDetails($idUser);
 }
