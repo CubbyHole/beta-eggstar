@@ -292,7 +292,7 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
     {
         $criteria = array(
             'state' => (int)1,
-            'idUser' => $idUser
+            'idUser' => new MongoId($idUser)
         );
 
         //récupération des droits sur les éléments
@@ -304,93 +304,96 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
         $refElementManager = new RefElementManager();
 
         //pour chaque droit
-        foreach($rights as $key => $right)
+        if(is_array($rights) && !(array_key_exists('error', $rights)))
         {
-            $owner = NULL;
-            $refRight = NULL;
-
-            //Récupération de l'élément. On enlève le droit de la liste si l'élément n'est pas disponible
-            $elementCriteria = array(
-                '_id' => new MongoId($right['idElement']),
-                'state' => (int)1
-            );
-
-            unset($right['idElement']);
-            $element = self::findOne($elementCriteria);
-            $idOwner = $element['idOwner'];
-            unset($element['idOwner']);
-
-            if(is_array($element) && !(array_key_exists('error', $element)))
+            foreach($rights as $key => $right)
             {
-                //récupération du refElement. On enlève le droit de la liste si le refElement n'est pas trouvé
-                $refElement = $refElementManager->findById($element['idRefElement']);
-                unset($element['idRefElement']);
+                $owner = NULL;
+                $refRight = NULL;
 
-                if(is_array($refElement) && !(array_key_exists('error', $refElement)))
+                //Récupération de l'élément. On enlève le droit de la liste si l'élément n'est pas disponible
+                $elementCriteria = array(
+                    '_id' => new MongoId($right['idElement']),
+                    'state' => (int)1
+                );
+
+                unset($right['idElement']);
+                $element = self::findOne($elementCriteria);
+                $idOwner = $element['idOwner'];
+                unset($element['idOwner']);
+
+                if(is_array($element) && !(array_key_exists('error', $element)))
                 {
-                    $element['refElement'] = $refElement;
-                    $right['element'] = $element;
+                    //récupération du refElement. On enlève le droit de la liste si le refElement n'est pas trouvé
+                    $refElement = $refElementManager->findById($element['idRefElement']);
+                    unset($element['idRefElement']);
+
+                    if(is_array($refElement) && !(array_key_exists('error', $refElement)))
+                    {
+                        $element['refElement'] = $refElement;
+                        $right['element'] = $element;
+                    }
+                    else
+                    {
+                        unset($rights[$key]);
+                        break;
+                    }
                 }
                 else
                 {
                     unset($rights[$key]);
                     break;
                 }
-            }
-            else
-            {
-                unset($rights[$key]);
-                break;
-            }
 
-            /*
-             * Récupération de l'utilisateur propriétaire.
-             * Si son état n'est pas à 1, le droit n'aurait pas du être à 1; donc on enlève ce droit de la liste.
-             */
-            $userCriteria = array(
-                '_id' => new MongoId($idOwner),
-                'state' => (int)1
-            );
+                /*
+                 * Récupération de l'utilisateur propriétaire.
+                 * Si son état n'est pas à 1, le droit n'aurait pas du être à 1; donc on enlève ce droit de la liste.
+                 */
+                $userCriteria = array(
+                    '_id' => new MongoId($idOwner),
+                    'state' => (int)1
+                );
 
-            $fieldsToReturn = array(
-                'firstName' => 1,
-                'lastName' => 1
-            );
+                $fieldsToReturn = array(
+                    'firstName' => 1,
+                    'lastName' => 1
+                );
 
-            unset($right['idUser']);
+                unset($right['idUser']);
 
-            $owner = $userManager->findOne($userCriteria, $fieldsToReturn);
+                $owner = $userManager->findOne($userCriteria, $fieldsToReturn);
 
-            if(is_array($owner) && !(array_key_exists('error', $owner)))
-            {
-                $right['owner'] = $owner;
-            }
-            else
-            {
-                unset($rights[$key]);
-                break;
-            }
+                if(is_array($owner) && !(array_key_exists('error', $owner)))
+                {
+                    $right['owner'] = $owner;
+                }
+                else
+                {
+                    unset($rights[$key]);
+                    break;
+                }
 
-            //Récupération du refRight. S'il n'existe pas on enlève ce droit de la liste.
-            $refRight = $refRightManager->findById($right['idRefRight']);
-            unset($right['idRefRight']);
+                //Récupération du refRight. S'il n'existe pas on enlève ce droit de la liste.
+                $refRight = $refRightManager->findById($right['idRefRight']);
+                unset($right['idRefRight']);
 
-            if(is_array($refRight) && !(array_key_exists('error', $refRight)))
-            {
-                $right['refRight'] = $refRight;
-            }
-            else
-            {
-                unset($rights[$key]);
-                break;
+                if(is_array($refRight) && !(array_key_exists('error', $refRight)))
+                {
+                    $right['refRight'] = $refRight;
+                }
+                else
+                {
+                    unset($rights[$key]);
+                    break;
+                }
+
+                $rights[$key] = $right;
             }
 
-            $rights[$key] = $right;
+            if(empty($rights))
+                return array('error' => 'No match found.');
         }
 
-        if(empty($rights))
-            return array('error' => 'No match found.');
-        else
-            return $rights;
+        return $rights;
     }
 }
