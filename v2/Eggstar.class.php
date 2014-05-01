@@ -102,52 +102,11 @@ class Eggstar extends API
             if(isset($this->request['idUser']) && isset($this->request{'isOwner'}))
             {
                 $idUser = $this->request['idUser'];
-                $isOwner = (bool)$this->request['isOwner'];
+                $isOwner = $this->request['isOwner'];
 
-                //cas de récupération des éléments dans l'utilisateur est le propriétaire
-                if($isOwner === TRUE)
-                {
-                    //Remarque: on pourrait mettre le tout dans une fonction (dans l'elementManager par exemple).
-                    $criteria = array(
-                        'state' => (int)1,
-                        'idOwner' => $idUser
-                    );
-
-                    //récupérations des éléments
-                    $elementManager = new ElementManager();
-                    $elements = $elementManager->find($criteria);
-
-                    $refElementManager = new RefElementManager();
-
-                    //récupération des refElement pour chaque élément
-                    foreach($elements as $key => $element)
-                    {
-                        unset($element['idOwner']);
-
-                        $refElement = $refElementManager->findById($element['idRefElement']);
-
-                        unset($element['idRefElement']);
-
-                        $element['refElement'] = $refElement;
-
-                        $elements[$key] = $element;
-                    }
-
-                    return $elements;
-                    //récup refelement
-                }
-                //cas de récupération des éléments partagés avec l'utilisateur par d'autres
-                else if($isOwner === FALSE)
-                {
-                    //Remarque: on pourrait mettre le tout dans une fonction (dans l'elementManager par exemple).
-                    $criteria = array(
-                        'state' => (int)1,
-                        'idUser' => $idUser
-                    );
-                    //requête dans collection right
-                    //récup refright, element, refElement, user proprio
-                }
-                else return array('error' => 'Parameter isOwner must be true or false');
+                $elementManager = new ElementManager();
+                $elements = $elementManager->returnElementsDetails($idUser, $isOwner);
+                return $elements;
             }
         }
         return 0;
