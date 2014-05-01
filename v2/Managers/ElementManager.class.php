@@ -245,33 +245,36 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
         {
             $criteria = array(
                 'state' => (int)1,
-                'idOwner' => $idUser
+                'idOwner' => new MongoId($idUser)
             );
 
             $elements = self::find($criteria);
 
-            //récupération des refElement pour chaque élément
-            foreach($elements as $key => $element)
+            if(is_array($elements) && !(array_key_exists('error', $elements)))
             {
-                unset($element['idOwner']);
-
-                $refElementManager = new RefElementManager();
-                $refElement = $refElementManager->findById($element['idRefElement']);
-
-                unset($element['idRefElement']);
-
-                if(is_array($refElement) && !(array_key_exists('error', $refElement)))
+                //récupération des refElement pour chaque élément
+                foreach($elements as $key => $element)
                 {
-                    $element['refElement'] = $refElement;
-                    $elements[$key] = $element;
+                    unset($element['idOwner']);
+
+                    $refElementManager = new RefElementManager();
+                    $refElement = $refElementManager->findById($element['idRefElement']);
+
+                    unset($element['idRefElement']);
+
+                    if(is_array($refElement) && !(array_key_exists('error', $refElement)))
+                    {
+                        $element['refElement'] = $refElement;
+                        $elements[$key] = $element;
+                    }
+                    else unset($elements[$key]);
                 }
-                else unset($elements[$key]);
+
+                if(empty($elements))
+                    return array('error' => 'No match found.');
             }
 
-            if(empty($elements))
-                return array('error' => 'No match found.');
-            else
-                return $elements;
+            return $elements;
         }
         else if($isOwner == '0')
         {
@@ -303,10 +306,9 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
         $refRightManager = new RefRightManager();
         $refElementManager = new RefElementManager();
 
-        //pour chaque droit
         if(is_array($rights) && !(array_key_exists('error', $rights)))
         {
-            foreach($rights as $key => $right)
+            foreach($rights as $key => $right)//pour chaque droit
             {
                 $owner = NULL;
                 $refRight = NULL;

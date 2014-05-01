@@ -121,12 +121,12 @@ interface ElementManagerInterface
 
     /**
      * - Distingue deux cas: récupération des éléments d'un utilisateur et récupération des éléments partagés avec un utilisateur
-     * - Dans le 1er cas (isOwner = true), on retourne les infos de l'élément et du refElement
-     * - Dans le second cas (isOwner = false), on retourne le droit, le refRight, l'élément, le refElement et le propriétaire
+     * - Dans le 1er cas (isOwner = 1), on retourne les infos de l'élément et du refElement
+     * - Dans le second cas (isOwner = 2), on retourne le droit, le refRight, l'élément, le refElement et le propriétaire
      * - Gestion des erreurs
      * @author Alban Truc
      * @param string|MongoId $idUser
-     * @param bool $isOwner
+     * @param string $isOwner
      * @since 01/05/2014
      * @return array
      */
