@@ -24,7 +24,7 @@ abstract class API
     protected $args = Array();
 
     //Contenu des requêtes PUT.
-    protected $file = Null;
+    protected $file = NULL;
 
     /**
      * Constructeur de la classe API.
