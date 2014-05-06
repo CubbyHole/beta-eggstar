@@ -103,10 +103,23 @@ class Eggstar extends API
             {
                 $idUser = $this->request['idUser'];
                 $isOwner = $this->request['isOwner'];
+                $token = $this->request['apiKey'];
 
-                $elementManager = new ElementManager();
-                $elements = $elementManager->returnElementsDetails($idUser, $isOwner);
-                return $elements;
+                $criteria = array(
+                    '_id' => new MongoId($idUser),
+                    'apiKey' => $token
+                );
+
+                $userManager = new UserManager();
+                $user = $userManager->findOne($criteria);
+
+                if(!(array_key_exists('error', $user)))
+                {
+                    $elementManager = new ElementManager();
+                    $elements = $elementManager->returnElementsDetails($idUser, $isOwner);
+                    return $elements;
+                }
+                else return array('error' => 'You cannot process another user\'s data');
             }
         }
         return 0;
