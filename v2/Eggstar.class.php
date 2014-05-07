@@ -116,7 +116,13 @@ class Eggstar extends API
                 if(!(array_key_exists('error', $user)))
                 {
                     $elementManager = new ElementManager();
-                    $elements = $elementManager->returnElementsDetails($idUser, $isOwner);
+                    if(isset($this->request['path']))
+                    {
+                        $path = $this->request['path'];
+                        $elements = $elementManager->returnElementsDetails($idUser, $isOwner, $path);
+                    }
+                    else $elements = $elementManager->returnElementsDetails($idUser, $isOwner);
+
                     return $elements;
                 }
                 else return array('error' => 'You cannot process another user\'s data');
