@@ -128,6 +128,77 @@ class Eggstar extends API
                 else return array('error' => 'You cannot process another user\'s data');
             }
         }
+        elseif($this->method == 'POST')
+        {
+            //emplacement du serveur de fichier
+            define('PATH', $_SERVER['DOCUMENT_ROOT'].'/Nestbox');
+
+            /*
+             * Le paramètre idUser est commun à tous les types d'actions prises en charge actuellement;
+             * à savoir: - téléversement de fichier,
+             *           - renommage de fichier/dossier,
+             *           - déplacement de fichier/dossier,
+             *           - suppression de fichier/dossier
+             */
+            if(isset($this->request['idUser']) && isset($this->request['path']) && isset($this->request['hash']))
+            {
+                $idUser = $this->request['idUser'];
+
+                //vérifier si l'utilisateur a les droits nécessaires
+
+                //si c'est le cas
+                $path = '/'.$idUser.'/'.$this->request['path'];
+                $this->request['hash'];
+
+                $serverPath = PATH.$path;
+                echo "omidf";
+                if(isset($_FILES['uploadFile']))
+                {
+                    $file = $_FILES['uploadFile'];
+                    var_dump($file);
+                    ini_set("memory_limit",'0');
+                    echo $this->file_get_size($file['tmp_name']);
+                }
+
+            }
+        }
         return 0;
+    }
+
+    function file_get_size($file) {
+        //open file
+        $fh = fopen($file, "r");
+        //declare some variables
+        $size = "0";
+        $char = "";
+        //set file pointer to 0; I'm a little bit paranoid, you can remove this
+        fseek($fh, 0, SEEK_SET);
+        //set multiplicator to zero
+        $count = 0;
+        while (true) {
+            //jump 1 MB forward in file
+            fseek($fh, 1048576, SEEK_CUR);
+            //check if we actually left the file
+            if (($char = fgetc($fh)) !== false) {
+                //if not, go on
+                $count ++;
+            } else {
+                //else jump back where we were before leaving and exit loop
+                fseek($fh, -1048576, SEEK_CUR);
+                break;
+            }
+        }
+        //we could make $count jumps, so the file is at least $count * 1.000001 MB large
+        //1048577 because we jump 1 MB and fgetc goes 1 B forward too
+        $size = bcmul("1048577", $count);
+        //now count the last few bytes; they're always less than 1048576 so it's quite fast
+        $fine = 0;
+        while(false !== ($char = fgetc($fh))) {
+            $fine ++;
+        }
+        //and add them
+        $size = bcadd($size, $fine);
+        fclose($fh);
+        return $size;
     }
 } 
