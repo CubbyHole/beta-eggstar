@@ -286,7 +286,7 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
         }
         else if($isOwner == '0')
         {
-            return self::returnSharedElementsDetails($idUser);
+            return self::returnSharedElementsDetails($idUser, $path, $elementName);
         }
         else return array('error' => 'Parameter isOwner must be 0 or 1');
     }
@@ -295,11 +295,13 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
      * Retourne le droit, le refRight, l'élément, le refElement et le propriétaire
      * @author Alban Truc
      * @param string|MongoId $idUser
+     * @param string $path emplacement sur le serveur des éléments
+     * @param NULL|string $elementName nom de l'élément
      * @since 01/05/2014
      * @return array
      */
 
-    public function returnSharedElementsDetails($idUser)
+    public function returnSharedElementsDetails($idUser, $path = 'all', $elementName = NULL)
     {
         $criteria = array(
             'state' => (int)1,
@@ -326,6 +328,12 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
                     '_id' => new MongoId($right['idElement']),
                     'state' => (int)1
                 );
+
+                if($path != 'all')
+                    $elementCriteria['serverPath'] = $path;
+
+                if($elementName != NULL)
+                    $elementCriteria['name'] = $elementName;
 
                 unset($right['idElement']);
                 $element = self::findOne($elementCriteria);

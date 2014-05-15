@@ -139,9 +139,11 @@ interface ElementManagerInterface
      * Retourne le droit, le refRight, l'élément, le refElement et le propriétaire
      * @author Alban Truc
      * @param string|MongoId $idUser
+     * @param string $path emplacement sur le serveur des éléments
+     * @param NULL|string $elementName nom de l'élément
      * @since 01/05/2014
      * @return array
      */
 
-    function returnSharedElementsDetails($idUser);
+    function returnSharedElementsDetails($idUser, $path, $elementName);
 }
