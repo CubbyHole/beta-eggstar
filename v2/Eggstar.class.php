@@ -24,6 +24,9 @@ class Eggstar extends API
 
     public function __construct($request, $origin)
     {
+        //Pour s'assurer que les lourds fichiers ne dépassent pas la limitation de mémoire.
+        ini_set("memory_limit",'0');
+
         //Appelle le constructeur de la classe API
         parent::__construct($request);
 
@@ -116,12 +119,16 @@ class Eggstar extends API
                 if(!(array_key_exists('error', $user)))
                 {
                     $elementManager = new ElementManager();
+
+                    if(isset($this->request['elementName']))
+                        $elementName = $this->request['elementName'];
+                    else $elementName = NULL;
+
                     if(isset($this->request['path']))
-                    {
                         $path = $this->request['path'];
-                        $elements = $elementManager->returnElementsDetails($idUser, $isOwner, $path);
-                    }
-                    else $elements = $elementManager->returnElementsDetails($idUser, $isOwner);
+                    else $path = 'all';
+
+                    $elements = $elementManager->returnElementsDetails($idUser, $isOwner, $path, $elementName);
 
                     return $elements;
                 }
@@ -130,36 +137,101 @@ class Eggstar extends API
         }
         elseif($this->method == 'POST')
         {
+            $elementManager = new ElementManager();
+
             //emplacement du serveur de fichier
             define('PATH', $_SERVER['DOCUMENT_ROOT'].'/Nestbox');
 
+            if(isset($this->request['idUser']))
+                $idUser = $this->request['idUser'];
+
+            if(isset($this->request['idElement']))
+                $idElement = $this->request['idElement'];
+
             /*
-             * Le paramètre idUser est commun à tous les types d'actions prises en charge actuellement;
+             * Correspond au chemin donné en paramètre d'URL.
+             * Peut représenter le chemin indiqué en base ou, dans le cas d'une demande de déplacement,
+             * la destination voulue.
+             */
+            if(isset($this->request['path']))
+            {
+                $pathGiven = $this->request['path'];
+
+                //chemin complet sur le serveur de fichier
+                $fileServerPath = PATH.'/'.$idUser.'/'.$pathGiven;
+            }
+
+            /*
+             * idUser est commun à tous les types d'actions prises en charge actuellement;
              * à savoir: - téléversement de fichier,
              *           - renommage de fichier/dossier,
              *           - déplacement de fichier/dossier,
              *           - suppression de fichier/dossier
              */
-            if(isset($this->request['idUser']) && isset($this->request['path']) && isset($this->request['hash']))
+            if(isset($idUser))
             {
-                $idUser = $this->request['idUser'];
-
                 //vérifier si l'utilisateur a les droits nécessaires
 
                 //si c'est le cas
-                $path = '/'.$idUser.'/'.$this->request['path'];
-                $this->request['hash'];
-
-                $serverPath = PATH.$path;
-                echo "omidf";
-                if(isset($_FILES['uploadFile']))
+                if(isset($idElement)) //tous les cas sauf le téléversement
                 {
+                    $criteria = array(
+                        '_id' => new MongoId($idElement),
+                        'state' => (int)1,
+                    );
+
+                    $options = array(
+                        'new' => TRUE
+                    );
+
+                    if(isset($this->request['name'])) //cas du renommage
+                    {
+                        $newFileName = $this->request['name'];
+
+                        //modification du nom du fichier sur les serveurs de fichiers
+                        //génération du nouveau hash du fichier
+                        $newFileHash = 'test';
+
+                        //modification en base
+                        $update = array(
+                            '$set' => array(
+                                'name' => $newFileName,
+                                'hash' => $newFileHash,
+                                'downloadLink' => ''
+                            )
+                        );
+                    }
+                    elseif(isset($pathGiven)) //cas du déplacement
+                    {
+                        //déplacement côté serveur
+                        //est-ce qu'on rend le fichier inaccessible le tps de cette opération?
+                        $update = array(
+                            '$set' => array(
+                                'serverPath' => $pathGiven,
+                                'downloadLink' => ''
+                            )
+                        );
+                    }
+                    else //cas de la suppression
+                    {
+                        $update = array(
+                            '$set' => array(
+                                'state' => (int)0,
+                                'downloadLink' => ''
+                            )
+                        );
+                    }
+
+                    return $elementManager->findAndModify($criteria, $update, NULL, $options);
+                }
+                elseif(isset($pathGiven) && isset($this->request['hash']) && isset($_FILES['uploadFile'])) //cas du téléversement
+                {
+                    $hash = $this->request['hash'];
+
                     $file = $_FILES['uploadFile'];
-                    var_dump($file);
-                    ini_set("memory_limit",'0');
+
                     echo $this->file_get_size($file['tmp_name']);
                 }
-
             }
         }
         return 0;

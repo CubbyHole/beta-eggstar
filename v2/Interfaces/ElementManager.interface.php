@@ -128,11 +128,12 @@ interface ElementManagerInterface
      * @param string|MongoId $idUser
      * @param string $isOwner
      * @param string $path emplacement sur le serveur des éléments
+     * @param NULL|string $elementName nom de l'élément
      * @since 01/05/2014
      * @return array
      */
 
-    function returnElementsDetails($idUser, $isOwner, $path = 'all');
+    function returnElementsDetails($idUser, $isOwner, $path = 'all', $elementName = NULL);
 
     /**
      * Retourne le droit, le refRight, l'élément, le refElement et le propriétaire
