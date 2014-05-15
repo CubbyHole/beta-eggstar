@@ -120,8 +120,8 @@ class Eggstar extends API
                 {
                     $elementManager = new ElementManager();
 
-                    if(isset($this->request['elementName']))
-                        $elementName = $this->request['elementName'];
+                    if(isset($this->request['name']))
+                        $elementName = $this->request['name'];
                     else $elementName = NULL;
 
                     if(isset($this->request['path']))
@@ -170,62 +170,81 @@ class Eggstar extends API
              */
             if(isset($idUser))
             {
-                //vérifier si l'utilisateur a les droits nécessaires
-
-                //si c'est le cas
                 if(isset($idElement)) //tous les cas sauf le téléversement
                 {
-                    $criteria = array(
-                        '_id' => new MongoId($idElement),
-                        'state' => (int)1,
-                    );
+                    /*
+                     * vérifier si l'utilisateur a les droits nécessaires,
+                     * dans les cas suivants le code de refRight est 11 (lecture et écriture)
+                     */
+                    $rightManager = new RightManager();
 
-                    $options = array(
-                        'new' => TRUE
-                    );
+                    $hasRight = $rightManager->hasRightOnElement($idUser, $idElement, '11');
 
-                    if(isset($this->request['name'])) //cas du renommage
+                    if($hasRight)
                     {
-                        $newFileName = $this->request['name'];
-
-                        //modification du nom du fichier sur les serveurs de fichiers
-                        //génération du nouveau hash du fichier
-                        $newFileHash = 'test';
-
-                        //modification en base
-                        $update = array(
-                            '$set' => array(
-                                'name' => $newFileName,
-                                'hash' => $newFileHash,
-                                'downloadLink' => ''
-                            )
+                        $criteria = array(
+                            '_id' => new MongoId($idElement),
+                            'state' => (int)1,
                         );
-                    }
-                    elseif(isset($pathGiven)) //cas du déplacement
-                    {
-                        //déplacement côté serveur
-                        //est-ce qu'on rend le fichier inaccessible le tps de cette opération?
-                        $update = array(
-                            '$set' => array(
-                                'serverPath' => $pathGiven,
-                                'downloadLink' => ''
-                            )
-                        );
-                    }
-                    else //cas de la suppression
-                    {
-                        $update = array(
-                            '$set' => array(
-                                'state' => (int)0,
-                                'downloadLink' => ''
-                            )
-                        );
-                    }
 
-                    return $elementManager->findAndModify($criteria, $update, NULL, $options);
+                        $options = array(
+                            'new' => TRUE
+                        );
+
+                        if(isset($this->request['name'])) //cas du renommage
+                        {
+                            $newFileName = $this->request['name'];
+
+                            //modification du nom du fichier sur les serveurs de fichiers
+                            //génération du nouveau hash du fichier
+                            $newFileHash = 'test';
+
+                            //modification en base
+                            $update = array(
+                                '$set' => array(
+                                    'name' => $newFileName,
+                                    'hash' => $newFileHash,
+                                    'downloadLink' => ''
+                                )
+                            );
+                        }
+                        elseif(isset($pathGiven)) //cas du déplacement
+                        {
+                            //déplacement côté serveur
+                            //est-ce qu'on rend le fichier inaccessible le tps de cette opération?
+                            $update = array(
+                                '$set' => array(
+                                    'serverPath' => $pathGiven,
+                                    'downloadLink' => ''
+                                )
+                            );
+                        }
+                        else //cas de la suppression
+                        {
+                            $update = array(
+                                '$set' => array(
+                                    'state' => (int)0,
+                                    'downloadLink' => ''
+                                )
+                            );
+                        }
+
+                        return $elementManager->findAndModify($criteria, $update, NULL, $options);
+                    }
+                    else return array('error' => 'Access denied');
                 }
                 elseif(isset($pathGiven) && isset($this->request['hash']) && isset($_FILES['uploadFile'])) //cas du téléversement
                 {
+                    //Récupérer l'id de l'élément correspondant au chemin donné
+                    $elementCriteria = array(
+                        'state' => (int)1,
+                        'serverPath' => $pathGiven
+                    );
+
+                    $idElement = $elementManager->find($elementCriteria, array('_id' => TRUE));
+
+                    var_dump($idElement); exit();
+
                     $hash = $this->request['hash'];
 
                     $file = $_FILES['uploadFile'];
