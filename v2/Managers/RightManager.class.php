@@ -229,4 +229,41 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
         return $result;
     }
+
+    /**
+     * Indique si l'utilisateur donné a les droits voulus sur l'élément donné
+     * @author Alban Truc
+     * @param MongoId|string $idUser
+     * @param MongoId|string $idElement
+     * @param string $refRightCode
+     * @since 15/05/2014
+     * @return bool
+     */
+
+    public function hasRightOnElement($idUser, $idElement, $refRightCode)
+    {
+        //récupérer l'id du refRight à partir du code
+        $refRightManager = new RefRightManager();
+
+        $refRightCriteria = array(
+            'state' => (int)1,
+            'code' => (string)$refRightCode
+        );
+
+        $refRight = $refRightManager->find($refRightCriteria);
+
+        //récupérer le droit
+        $rightCriteria = array(
+            'state' => (int)1,
+            'idUser' => new MongoId($idUser),
+            'idElement' => new MongoId($idElement),
+            'idRefRigt' => $refRight->getId()
+        );
+
+        $right = self::find($rightCriteria);
+
+        if(!(array_key_exists('error', $right)))
+            return TRUE;
+        else return FALSE;
+    }
 }

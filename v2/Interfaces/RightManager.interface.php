@@ -118,4 +118,16 @@ interface RightManagerInterface
      */
 
     function remove($criteria, $options = array('w' => 1));
+
+    /**
+     * Indique si l'utilisateur donné a les droits voulus sur l'élément donné
+     * @author Alban Truc
+     * @param MongoId|string $idUser
+     * @param MongoId|string $idElement
+     * @param string $refRightCode
+     * @since 15/05/2014
+     * @return bool
+     */
+
+    function hasRightOnElement($idUser, $idElement, $refRightCode);
 }
