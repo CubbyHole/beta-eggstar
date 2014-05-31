@@ -122,7 +122,7 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function findById($id, $fieldsToReturn = array())
     {
-        $result = parent::__findOne('right', array('_id' => new MongoId($id)));
+        $result = parent::__findOne('right', array('_id' => new MongoId($id)), $fieldsToReturn);
         $result = self::convert($result);
 
         return $result;
@@ -139,7 +139,7 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function findAll($fieldsToReturn = array())
     {
-        $cursor = parent::__find('right', array());
+        $cursor = parent::__find('right', $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
         {
@@ -250,14 +250,14 @@ class RightManager extends AbstractManager implements RightManagerInterface{
             'code' => (string)$refRightCode
         );
 
-        $refRight = $refRightManager->find($refRightCriteria);
+        $refRight = $refRightManager->findOne($refRightCriteria);
 
         //récupérer le droit
         $rightCriteria = array(
             'state' => (int)1,
             'idUser' => new MongoId($idUser),
             'idElement' => new MongoId($idElement),
-            'idRefRigt' => $refRight->getId()
+            'idRefRigt' => $refRight['_id']
         );
 
         $right = self::find($rightCriteria);

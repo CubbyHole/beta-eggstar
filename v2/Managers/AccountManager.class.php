@@ -130,7 +130,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function findAll($fieldsToReturn = array())
     {
-        $cursor = parent::__find('account', array());
+        $cursor = parent::__find('account', $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
         {
@@ -161,7 +161,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function findById($id, $fieldsToReturn = array())
     {
-        $result = parent::__findOne('account', array('_id' => new MongoId($id)));
+        $result = parent::__findOne('account', array('_id' => new MongoId($id)), $fieldsToReturn);
         $result = self::convert($result);
 
         return $result;

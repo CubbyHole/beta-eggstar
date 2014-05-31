@@ -120,7 +120,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function findAll($fieldsToReturn = array())
     {
-        $cursor = parent::__find('user', array());
+        $cursor = parent::__find('user', $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
         {
@@ -151,7 +151,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function findById($id, $fieldsToReturn = array())
     {
-        $result = parent::__findOne('user', array('_id' => new MongoId($id)));
+        $result = parent::__findOne('user', array('_id' => new MongoId($id)), $fieldsToReturn);
         $result = self::convert($result);
 
         return $result;
