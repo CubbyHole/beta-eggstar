@@ -137,121 +137,144 @@ class Eggstar extends API
         }
         elseif($this->method == 'POST')
         {
-            $elementManager = new ElementManager();
-
-            //emplacement du serveur de fichier
-            define('PATH', $_SERVER['DOCUMENT_ROOT'].'/Nestbox');
-
-            if(isset($this->request['idUser']))
-                $idUser = $this->request['idUser'];
-
-            if(isset($this->request['idElement']))
-                $idElement = $this->request['idElement'];
-
-            /*
-             * Correspond au chemin donné en paramètre d'URL.
-             * Peut représenter le chemin indiqué en base ou, dans le cas d'une demande de déplacement,
-             * la destination voulue.
-             */
-            if(isset($this->request['path']))
-            {
-                $pathGiven = $this->request['path'];
-
-                //chemin complet sur le serveur de fichier
-                $fileServerPath = PATH.'/'.$idUser.'/'.$pathGiven;
-            }
-
-            /*
-             * idUser est commun à tous les types d'actions prises en charge actuellement;
-             * à savoir: - téléversement de fichier,
-             *           - renommage de fichier/dossier,
-             *           - déplacement de fichier/dossier,
-             *           - suppression de fichier/dossier
-             */
-            if(isset($idUser))
-            {
-                if(isset($idElement)) //tous les cas sauf le téléversement
-                {
-                    /*
-                     * vérifier si l'utilisateur a les droits nécessaires,
-                     * dans les cas suivants le code de refRight est 11 (lecture et écriture)
-                     */
-                    $rightManager = new RightManager();
-
-                    $hasRight = $rightManager->hasRightOnElement($idUser, $idElement, '11');
-
-                    if($hasRight)
-                    {
-                        $criteria = array(
-                            '_id' => new MongoId($idElement),
-                            'state' => (int)1,
-                        );
-
-                        $options = array(
-                            'new' => TRUE
-                        );
-
-                        if(isset($this->request['name'])) //cas du renommage
-                        {
-                            $newFileName = $this->request['name'];
-
-                            //modification du nom du fichier sur les serveurs de fichiers
-                            //génération du nouveau hash du fichier
-                            $newFileHash = 'test';
-
-                            //modification en base
-                            $update = array(
-                                '$set' => array(
-                                    'name' => $newFileName,
-                                    'hash' => $newFileHash,
-                                    'downloadLink' => ''
-                                )
-                            );
-                        }
-                        elseif(isset($pathGiven)) //cas du déplacement
-                        {
-                            //déplacement côté serveur
-                            //est-ce qu'on rend le fichier inaccessible le tps de cette opération?
-                            $update = array(
-                                '$set' => array(
-                                    'serverPath' => $pathGiven,
-                                    'downloadLink' => ''
-                                )
-                            );
-                        }
-                        else //cas de la suppression
-                        {
-                            $update = array(
-                                '$set' => array(
-                                    'state' => (int)0,
-                                    'downloadLink' => ''
-                                )
-                            );
-                        }
-
-                        return $elementManager->findAndModify($criteria, $update, NULL, $options);
-                    }
-                    else return array('error' => 'Access denied');
-                }
-                elseif(isset($pathGiven) && isset($this->request['hash']) && isset($_FILES['uploadFile'])) //cas du téléversement
-                {
-                    //Récupérer l'id de l'élément correspondant au chemin donné
-                    $elementCriteria = array(
-                        'state' => (int)1,
-                        'serverPath' => $pathGiven
-                    );
-
-                    $idElement = $elementManager->find($elementCriteria, array('_id' => TRUE));
-
-                    var_dump($idElement); exit();
-
-                    $hash = $this->request['hash'];
-
-                    $file = $_FILES['uploadFile'];
-
-                    echo $this->file_get_size($file['tmp_name']);
-                }
-            }
+            return handleActions($this->request);
+//            $elementManager = new ElementManager();
+//
+//            //emplacement du serveur de fichier
+//            define('PATH', $_SERVER['DOCUMENT_ROOT'].'/Nestbox');
+//
+//            if(isset($this->request['idUser']))
+//                $idUser = $this->request['idUser'];
+//
+//            if(isset($this->request['idElement']))
+//                $idElement = $this->request['idElement'];
+//
+//            /*
+//             * Correspond au chemin donné en paramètre d'URL.
+//             * Peut représenter le chemin indiqué en base ou, dans le cas d'une demande de déplacement,
+//             * la destination voulue.
+//             */
+//            if(isset($this->request['path']))
+//            {
+//                $pathGiven = $this->request['path'];
+//
+//                //chemin complet sur le serveur de fichier
+//                $fileServerPath = PATH.'/'.$idUser.'/'.$pathGiven;
+//
+//                //Récupérer l'id de l'élément correspondant au chemin donné
+//                $elementDestinationCriteria = array(
+//                    'state' => (int)1,
+//                    'serverPath' => $pathGiven
+//                );
+//
+//                $destinationElement = $elementManager->find($elementDestinationCriteria);
+//                $idDestinationElement = $destinationElement['_id'];
+//            }
+//
+//            /*
+//             * idUser est commun à tous les types d'actions prises en charge actuellement;
+//             * à savoir: - téléversement de fichier,
+//             *           - renommage de fichier/dossier,
+//             *           - déplacement de fichier/dossier,
+//             *           - suppression de fichier/dossier
+//             */
+//            if(isset($idUser))
+//            {
+//                if(isset($idElement)) //tous les cas sauf le téléversement
+//                {
+//                    /*
+//                     * vérifier si l'utilisateur a les droits nécessaires,
+//                     * dans les cas suivants :
+//                     *  l'utilisateur est propriétaire
+//                     *  ou le code de refRight est 11 (lecture et écriture)
+//                     */
+//                    $element = $elementManager->findById($idElement);
+//
+//                    if(!array_key_exists('error', $element))
+//                    {
+//                        if($element['idOwner'] == $idUser)
+//                            $isOwner = TRUE;
+//                        else
+//                        {
+//                            $rightManager = new RightManager();
+//                            $hasRight = $rightManager->hasRightOnElement($idUser, $idElement, '11');
+//                        }
+//                        if($isOwner || $hasRight)
+//                        {
+//                            $criteria = array(
+//                                '_id' => new MongoId($idElement),
+//                                'state' => (int)1,
+//                            );
+//
+//                            $options = array(
+//                                'new' => TRUE
+//                            );
+//
+//                            if(isset($this->request['name'])) //cas du renommage
+//                            {
+//                                $newFileName = $this->request['name'];
+//                                //modification du nom du fichier sur les serveurs de fichiers
+//                                return renameElement($idUser, $idElement, $newFileName);
+//
+//                                //génération du nouveau hash du fichier
+//                                $newFileHash = 'test';
+//
+//                                //modification en base
+//                                $update = array(
+//                                    '$set' => array(
+//                                        'name' => $newFileName,
+//                                        'hash' => $newFileHash,
+//                                        'downloadLink' => ''
+//                                    )
+//                                );
+//                            }
+//                            elseif(isset($pathGiven)) //cas du déplacement
+//                            {
+//                                if($destinationElement['_id'] == $idUser)
+//                                    $isOwnerOfDestination = TRUE;
+//                                else
+//                                    //l'utilisateur a-t-il les droits sur le dossier de destination?
+//                                    $hasRightOnDestination = $rightManager->hasRightOnElement($idUser, $idDestinationElement, '11');
+//
+//                                if($isOwnerOfDestination || $hasRightOnDestination)
+//                                {
+//                                    //déplacement côté serveur
+//                                    $update = array(
+//                                        '$set' => array(
+//                                            'serverPath' => $pathGiven,
+//                                            'downloadLink' => ''
+//                                        )
+//                                    );
+//                                }
+//                                else return array('error' => 'Access of destination denied');
+//                            }
+//                            else //cas de la suppression
+//                            {
+//                                $update = array(
+//                                    '$set' => array(
+//                                        'state' => (int)0,
+//                                        'downloadLink' => ''
+//                                    )
+//                                );
+//                            }
+//
+//                            return $elementManager->findAndModify($criteria, $update, NULL, $options);
+//                        }
+//                        else return array('error' => 'Access denied');
+//                    }
+//                    else return array('error' => 'Element does not exist');
+//                }
+//                elseif(isset($pathGiven) && isset($this->request['hash']) && isset($_FILES['uploadFile'])) //cas du téléversement
+//                {
+//                    var_dump($idDestinationElement); exit();
+//
+//                    $hash = $this->request['hash'];
+//
+//                    $file = $_FILES['uploadFile'];
+//
+//                    echo $this->file_get_size($file['tmp_name']);
+//                }
+//            }
         }
         return 0;
     }

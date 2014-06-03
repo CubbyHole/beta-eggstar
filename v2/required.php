@@ -24,3 +24,6 @@ require_once '/Managers/ElementManager.class.php';
 require_once '/Managers/RefElementManager.class.php';
 require_once '/Managers/RightManager.class.php';
 require_once '/Managers/RefRightManager.class.php';
+
+//require_once '/Utils/FileSystemManager.php';
+require_once '/Utils/ActionManager.php';
