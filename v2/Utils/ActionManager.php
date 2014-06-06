@@ -76,13 +76,13 @@ function actionAllowed($idElement, $idUser, $refRightCodes)
  * @author Alban Truc
  * @param MongoId|string $idElement
  * @param MongoId|string $idUser
- * @param bool $returnImpactedElements si TRUE, retourne les éléments impactés par l'action
+ * @param string $returnImpactedElements si 'TRUE', retourne les éléments impactés par l'action
  * @since 31/05/2014
  * @return array|Element
  * @todo appel de la fonction qui fait diverses tâches (cf. documentation) sur le serveur de fichier
  */
 
-function disableHandler($idElement, $idUser, $returnImpactedElements = FALSE)
+function disableHandler($idElement, $idUser, $returnImpactedElements = 'false')
 {
     $idElement = new MongoId($idElement);
     $idUser = new MongoId($idUser);
@@ -165,7 +165,7 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = FALSE)
                                 foreach($impactedElements as $impactedElement)
                                 {
                                     //création d'un tableau contenant uniquement les id des éléments impactés
-                                    $idImpactedElements[] = $impactedElement['_id'];
+                                    $idImpactedElements[]['idElementImpacted'] = $impactedElement['_id'];
 
                                     //création d'un tableau contenant uniquement la taille de chaque élément impacté
                                     $sizeImpactedElements[] = $impactedElement['size'];
@@ -211,7 +211,7 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = FALSE)
                                 {
                                     if($accountUpdateResult === TRUE)
                                     {
-                                        if($returnImpactedElements == TRUE)
+                                        if($returnImpactedElements == 'true')
                                             return $idImpactedElements;
                                         else return TRUE;
                                     }
