@@ -19,9 +19,6 @@ abstract class AbstractManager
     const DBPORT = 27017;
     const DBNAME = 'nestbox';
 
-    /** @var mixed $instance instance de la classe */
-    private static $instance;
-
     /** @var Mongo $connection connexion à la base */
     protected $connection;
 
@@ -30,42 +27,16 @@ abstract class AbstractManager
 
     /**
      * Constructeur: génère la connexion à la base de données Mongo.
+     * @param string $databaseName
+     * @param int $databasePort
+     * @param string $databaseHost
      * @author Alban Truc
      * @since 30/01/14
      */
 
-    public function __construct()
+    public function __construct($databaseName = self::DBNAME, $databasePort = self::DBPORT, $databaseHost = self::DBHOST)
     {
-        /** @var string $connectionString chaine de connexion
-         * @link http://www.php.net/manual/fr/function.sprintf.php
-         */
-        $connectionString = sprintf('mongodb://%s:%d/%s', AbstractManager::DBHOST, AbstractManager::DBPORT, AbstractManager::DBNAME);
-
-        try
-        {
-            $this->connection = new MongoClient($connectionString);
-            $this->database = $this->connection->selectDB(AbstractManager::DBNAME);
-        }
-        catch (Exception $e)
-        {
-            if($e instanceof MongoConnectionException)
-            {
-                $error = 'Could not reach a database.
-                Please contact our technical support (technical.support@cubbyhole.com)
-                if this error remains for  more than 30 minutes.';
-
-                return $error;
-            }
-            else
-            {
-                $error = 'The following error occured when trying to reach a database:
-                '.utf8_encode($e->getMessage().' In '.$e->getFile().' at line '.$e->getLine()).'
-                Please contact our technical support at technical.support@cubbyhole.com if this error remains.';
-
-                return $error;
-            }
-            exit();
-        }
+        self::selectDatabase($databaseName, $databasePort, $databaseHost);
     }
 
     /**
@@ -79,6 +50,49 @@ abstract class AbstractManager
     public function getCollection($name)
     {
         return $this->database->selectCollection($name);
+    }
+
+    /**
+     * Permet de sélectionner la base de données (et d'en changer)
+     * @author Alban Truc
+     * @param string $databaseName
+     * @param int $databasePort
+     * @param string $databaseHost
+     * @since 03/06/2014
+     */
+
+    public function selectDatabase($databaseName, $databasePort = 27017, $databaseHost = 'localhost')
+    {
+        /** @var string $connectionString chaine de connexion
+         * @link http://www.php.net/manual/fr/function.sprintf.php
+         */
+        $connectionString = sprintf('mongodb://%s:%d/%s', $databaseHost, $databasePort, $databaseName);
+
+        try
+        {
+            $this->connection = new MongoClient($connectionString);
+            $this->database = $this->connection->selectDB($databaseName);
+        }
+        catch (Exception $e)
+        {
+            if($e instanceof MongoConnectionException)
+            {
+                $error = '<div class="alert alert-danger"><p>Could not reach a database.</p>
+                Please contact our technical support (technical.support@cubbyhole.com)
+                if this error remains for  more than 30 minutes.</div>';
+
+                echo $error;
+            }
+            else
+            {
+                $error = '<div class="alert alert-danger"><p>The following error occured when trying to reach a database:</p>
+                <p>'.utf8_encode($e->getMessage().' In '.$e->getFile().' at line '.$e->getLine()).'</p>
+                <p>Please contact our technical support at technical.support@cubbyhole.com if this error remains.</p></div>';
+
+                echo $error;
+            }
+            exit();
+        }
     }
 
     /**

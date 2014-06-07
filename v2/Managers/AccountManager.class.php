@@ -35,7 +35,7 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function __construct()
     {
-        parent::__construct();
+        parent::__construct('cubbyhole');
         $this->accountCollection = $this->getCollection('account');
     }
 

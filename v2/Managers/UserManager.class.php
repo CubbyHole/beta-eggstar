@@ -35,7 +35,7 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function __construct()
     {
-        parent::__construct();
+        parent::__construct('cubbyhole');
         $this->userCollection = $this->getCollection('user');
     }
 

@@ -32,7 +32,7 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
 	public function __construct()
 	{
-        parent::__construct();
+        parent::__construct('cubbyhole');
         $this->refPlanCollection = $this->getCollection('refplan');
 	}
 
