@@ -137,6 +137,19 @@ class Eggstar extends API
         }
         elseif($this->method == 'POST')
         {
+            $options = array();
+
+            if(isset($this->request['returnImpactedElements']))
+                $options['returnImpactedElements'] = $this->request['returnImpactedElements'];
+
+            if(isset($this->request['returnPastedElements']))
+                $options['returnPastedElements'] = $this->request['returnPastedElements'];
+
+            if(isset($this->request['keepRights']))
+                $options['keepRights'] = $this->request['keepRights'];
+
+            $this->request['options'] = $options;
+
             return handleActions($this->request);
 //            $elementManager = new ElementManager();
 //
