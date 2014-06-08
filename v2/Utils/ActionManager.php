@@ -18,6 +18,7 @@ function handleActions($request)
             case 'rename':
                 break;
             case 'move':
+                return moveHandler($request['idElement'], $request['idUser'], $request['path'], $request['options']);
                 break;
             case 'disable':
                 return disableHandler($request['idElement'], $request['idUser'], $request['returnImpactedElements']);
@@ -242,6 +243,50 @@ function copyRights($sourceElementList, $pastedElementList)
 }
 
 /**
+ * Désactive les droits appliqués à chaque élément d'une liste d'éléments
+ * @author Alban Truc
+ * @param array $elementList
+ * @since 08/06/2014
+ */
+
+function disableRights($elementList)
+{
+    //si on voulait log
+    //$disabledRights = array();
+    //$failedToDisable = array();
+    //$count = 0
+    $rightManager = new RightManager();
+
+    $rightCriteria = array(
+        'state' => (int) 1,
+    );
+
+    $rightUpdate = array(
+        '$set' => array( 'state' => (int) 0)
+    );
+
+    $options = array('multiple' => true);
+
+    foreach($elementList as $element)
+    {
+        $rightCriteria['idElement'] = $element['_id'];
+
+        $disableResult = $rightManager->update($rightCriteria, $rightUpdate, $options);
+
+        /*
+        //si on voulait log
+        if(!(is_bool($disableResult)))
+        {
+            $failedToDisable[$count]['rightCriteria'] = $rightCriteria;
+            $failedToDisable[$count]['error'] = $disableResult['error'];
+            $count++;
+        }
+        else $disabledRights[] = $element['_id']; //liste des id d'éléments dont on a désactivé les droits
+        */
+    }
+}
+
+/**
  * Renomme de la même manière que le ferait un OS Windows pour éviter les collisions de nom.
  * Remarque: la version actuelle de cette fonction ne prend pas en compte l'extension du fichier (si l'élément est
  * effectivement un fichier). On ne peut donc pas avoir dans un même emplacement un fichier test.flac et test.mp3.
@@ -380,7 +425,7 @@ function avoidNameCollision($path, $element)
 function prepareCopyReturn($options, $operationSuccess, $error, $elementsImpacted, $pastedElements, $failedToPaste)
 {
     $return = array();
-
+    $elementManager = new ElementManager();
     $return['operationSuccess'] = $operationSuccess;
 
     if(is_array($error) && array_key_exists('error', $error))
@@ -394,7 +439,7 @@ function prepareCopyReturn($options, $operationSuccess, $error, $elementsImpacte
             if(empty($elementsImpacted))
                 $return['elementsImpacted'] = 'No impacted element or the function had an error before the element(s) got retrieved.';
             else
-                $return['elementsImpacted'] = $elementsImpacted;
+                $return['elementsImpacted'] = $elementManager->convert($elementsImpacted);
         }
 
         if(array_key_exists('returnPastedElements', $options) && $options['returnPastedElements'] == 'TRUE')
@@ -402,12 +447,61 @@ function prepareCopyReturn($options, $operationSuccess, $error, $elementsImpacte
             if(empty($pastedElements))
                 $return['pastedElements'] = 'No pasted element or the function had an error before trying to.';
             else
-                $return['pastedElements'] = $pastedElements;
+                $return['pastedElements'] = $elementManager->convert($pastedElements);
 
             if(empty($failedToPaste))
                 $return['failedToPaste'] = 'No fail or the function had an error before trying to.';
             else
-                $return['failedToPaste'] = $failedToPaste;
+                $return['failedToPaste'] = $elementManager->convert($failedToPaste);
+        }
+    }
+    return $return;
+}
+
+/**
+ * Prépare le retour de la fonction moveHandler
+ * @author Alban Truc
+ * @param array $options
+ * @param bool $operationSuccess
+ * @param string|array $error
+ * @param array $elementsImpacted
+ * @param array $movedElements
+ * @param array $failedToMove
+ * @return array
+ */
+
+function prepareMoveReturn($options, $operationSuccess, $error, $elementsImpacted, $movedElements, $failedToMove)
+{
+    $return = array();
+    $elementManager = new ElementManager();
+    $return['operationSuccess'] = $operationSuccess;
+
+    if(is_array($error) && array_key_exists('error', $error))
+        $return['error'] = $error['error'];
+    else
+        $return['error'] = $error;
+
+    if(is_array($options))
+    {
+        if(array_key_exists('returnImpactedElements', $options) && $options['returnImpactedElements'] == 'TRUE')
+        {
+            if(empty($elementsImpacted))
+                $return['elementsImpacted'] = 'No impacted element or the function had an error before the element(s) got retrieved.';
+            else
+                $return['elementsImpacted'] = $elementManager->convert($elementsImpacted);
+        }
+
+        if(array_key_exists('returnMovedElements', $options) && $options['returnMovedElements'] == 'TRUE')
+        {
+            if(empty($movedElements))
+                $return['movedElements'] = 'No moved element or the function had an error before trying to.';
+            else
+                $return['movedElements'] = $elementManager->convert($movedElements);
+
+            if(empty($failedToMove))
+                $return['failedToMove'] = 'No fail or the function had an error before trying to.';
+            else
+                $return['failedToMove'] = $elementManager->convert($failedToMove);
         }
     }
     return $return;
@@ -517,7 +611,7 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = 'false')
                                         if(isset($impactedElement['size']))
                                             $sizeImpactedElements[] = $impactedElement['size'];
                                     }
-                                    //var_dump($sizeImpactedElements);
+                                    //var_dump($idImpactedElements);
                                     //désactivation des droits sur ces éléments
                                     $rightUpdate = array(
                                         '$set' => array(
@@ -531,7 +625,7 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = 'false')
                                     {
                                         $rightCriteria = array(
                                             'state' => (int)1,
-                                            'idElement' => $id
+                                            'idElement' => $id['idElementImpacted']
                                         );
 
                                         //l'opération n'étant pas bloquante, on ne se soucie pour l'instant pas d'un potentiel échec
@@ -864,21 +958,205 @@ function renameHandler($idElement, $idUser, $name)
     else return $hasRight;
 }
 
-function moveHandler($idElement, $idUser, $path)
+/**
+ * Déplace l'élément (et ce qu'il contient dans le cas d'un dossier) dans la destination indiquée.
+ * $options est un tableau de booléens avec comme indexes possibles:
+ * - returnImpactedElements à true pour retourner les éléments à déplacer
+ * - returnMovedElements à true pour retourner les éléments déplacés
+ * - keepRights à false pour ne pas conserver les droits sur les éléments
+ * - keepDownloadLinks à false pour ne pas conserver les liens de téléchargement
+ * On peut se retrouver avec la structure de retour suivante:
+ *  array(
+ *          'operationSuccess' => true ou false,
+ *          'error' => 'message d'erreur',
+ *          'impactedElements' => array(),
+ *          'movedElements' => array(),
+ *          'failedToMove' => array()
+ *  )
+ * @author Alban Truc
+ * @param string|MongoId $idElement
+ * @param string|MongoId $idUser
+ * @param string $path
+ * @param array $options
+ * @since 08/06/2014
+ * @return array
+ * @todo mêmes améliorations que pour la fonction copyHandler
+ */
+
+function moveHandler($idElement, $idUser, $path, $options = array())
 {
     $idElement = new MongoId($idElement);
     $idUser = new MongoId($idUser);
 
-    // 11 correspond au droit de lecture et écriture
-    $hasRight = actionAllowed($idElement, $idUser, '11');
+    $impactedElements = array();
+    $movedElements = array();
+    $failedToMove = array();
+
+    $operationSuccess = FALSE;
+
+    /*
+     * 11 correspond au droit de lecture et écriture.
+     * Si on souhaite accepter la copie avec des droits de plus bas niveau, il suffit d'ajouter les codes correspondant
+     * au tableau en 3e paramètre ci-dessous.
+     */
+
+    $hasRight = actionAllowed($idElement, $idUser, array('11'));
 
     if(!(is_array($hasRight)))
     {
         if($hasRight === TRUE)
         {
+            //récupère l'élément
+            $elementManager = new ElementManager();
+            $element = $elementManager->findById($idElement);
 
+            if(!(array_key_exists('error', $element)))
+            {
+                if($element['state'] == 1)
+                {
+                    if($path != $element['serverPath'])
+                    {
+                        $elementCriteria = array(
+                            'state' => (int)1,
+                        );
+
+                        /*
+                         * extraction de l'emplacement du dossier de destination à partir de $path
+                         * @see http://www.php.net/manual/en/function.implode.php
+                         * @see http://www.php.net/manual/en/function.explode.php
+                         */
+                        $destinationFolderPath = implode('/', explode('/', $path, -2)).'/';
+                        $elementCriteria['serverPath'] = $destinationFolderPath;
+
+                        /**
+                         * la racine n'ayant pas d'enregistrement pour elle même, on a un serverPath "/" mais de nom.
+                         * il faut donc distinguer les cas de copies d'un élément dans la racine des autres cas.
+                         */
+                        if($path != "/")
+                        {
+                            /*
+                            * extraction du nom du dossier de destination à partir du $path
+                            * @see http://www.php.net/manual/en/function.array-slice.php
+                            */
+                            $destinationFolderName = implode(array_slice(explode('/', $path), -2, 1));
+                            $elementCriteria['name'] = $destinationFolderName;
+                        }
+
+                        //récupération de l'id de l'élément en base correspondant au dossier de destination
+                        $idDestinationFolder = $elementManager->findOne($elementCriteria, array('_id' => TRUE));
+
+                        if((array_key_exists('error', $idDestinationFolder)))
+                            return prepareMoveReturn($options, $operationSuccess, $idDestinationFolder, $impactedElements, $movedElements, $failedToMove);
+                        else
+                        {
+                            //vérification des droits dans la destination
+                            $hasRightOnDestination = actionAllowed($idDestinationFolder['_id'], $idUser, array('11'));
+
+                            if(is_array($hasRightOnDestination) && array_key_exists('error', $hasRightOnDestination))
+                                return prepareMoveReturn($options, $operationSuccess, $hasRightOnDestination, $impactedElements, $movedElements, $failedToMove);
+                            elseif($hasRightOnDestination == FALSE)
+                                return prepareMoveReturn($options, $operationSuccess, array('error' => 'Access denied in destination'), $impactedElements, $movedElements, $failedToMove);
+                        }
+                    }
+
+                    $elementNameInDestination = avoidNameCollision($path, $element);
+
+                    if(is_string($elementNameInDestination))
+                    {
+                        $isElementAFolder = isFolder($element['idRefElement']);
+
+                        if(!(is_array($isElementAFolder))) //pas d'erreur
+                        {
+                            if($isElementAFolder == TRUE) //l'élément est un dossier
+                            {
+                                $serverPath = $element['serverPath'].$element['name'].'/';
+
+                                //récupération des éléments contenus dans le dossier
+                                $seekElementsInFolder = array(
+                                    'state' => (int)1,
+                                    'serverPath' => new MongoRegex("/^$serverPath/i")
+                                );
+
+                                $elementsInFolder = $elementManager->find($seekElementsInFolder);
+                            }
+
+
+                            if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
+                                $impactedElements = $elementsInFolder;
+
+
+                            $impactedElements[] = $element;
+
+                            $count = 0;
+
+                            foreach($impactedElements as $key => $impactedElement)
+                            {
+                                $updateCriteria = array(
+                                    '_id' => $impactedElement['_id'],
+                                    'state' => (int)1
+                                );
+                                //préparation de la copie
+                                $elementCopy = $impactedElement;
+
+                                if(count($impactedElements) != $key+1)
+                                {$explode = explode($serverPath, $elementCopy['serverPath']);
+                                    if(isset($explode[1]) && $explode[1] != '')
+                                    {
+                                        $elementPath = $path.$elementNameInDestination.'/'.$explode[1];
+                                        $elementCopy['serverPath'] = $elementPath;
+                                    }
+                                    else
+                                        $elementCopy['serverPath'] = $path.$elementNameInDestination.'/';
+                                }
+                                else
+                                {
+                                    $elementCopy['name'] = $elementNameInDestination;
+                                }
+
+                                if(array_key_exists('keepDownloadLinks', $options) && $options['keepDownloadLinks'] == 'FALSE')
+                                    $elementCopy['downloadLink'] = '';
+
+                                //mise à jour
+                                $updateResult = $elementManager->update($updateCriteria, $elementCopy);
+
+                                //gestion des erreurs
+
+                                if(!(is_bool($updateResult))) //erreur
+                                {
+                                    $failedToPaste[$count]['elementToMove'] = $impactedElement;
+                                    $failedToPaste[$count]['elementMoved'] = $elementCopy;
+                                    $failedToPaste[$count]['error'] = $updateResult['error'];
+                                    $count++;
+                                }
+                                elseif($updateResult == TRUE)
+                                    $movedElements[] = $elementCopy;
+                            }
+
+                            /*
+                             * Si le déplacement vide un dossier ou rempli un dossier qui était vide,
+                             * on met à jour son refElement
+                             */
+                            updateFolderStatus($path);
+
+                            if(array_key_exists('keepRights', $options) && $options['keepRights'] == 'FALSE')
+                                disableRights($impactedElements);
+
+                            //@todo déplacement sur le serveur de fichier
+
+                            $operationSuccess = TRUE;
+
+                            return prepareMoveReturn($options, $operationSuccess, array(), $impactedElements, $movedElements, $failedToMove);
+
+                        }
+                        else return prepareMoveReturn($options, $operationSuccess, $isElementAFolder, $impactedElements, $movedElements, $failedToMove);
+                    }
+                    else return prepareMoveReturn($options, $operationSuccess, $elementNameInDestination, $impactedElements, $movedElements, $failedToMove);
+                }
+                else return prepareMoveReturn($options, $operationSuccess, array('error' => 'Element inactivated, nothing to do'), $impactedElements, $movedElements, $failedToMove);
+            }
+            else return prepareMoveReturn($options, $operationSuccess, $element, $impactedElements, $movedElements, $failedToMove);
         }
-        else return array('error' => 'Access denied');
+        else return prepareMoveReturn($options, $operationSuccess, array('error' => 'Access denied'), $impactedElements, $movedElements, $failedToMove);
     }
-    else return $hasRight;
+    else return prepareMoveReturn($options, $operationSuccess, $hasRight, $impactedElements, $movedElements, $failedToMove);
 }

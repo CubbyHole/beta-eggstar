@@ -145,8 +145,14 @@ class Eggstar extends API
             if(isset($this->request['returnPastedElements']))
                 $options['returnPastedElements'] = $this->request['returnPastedElements'];
 
+            if(isset($this->request['returnMovedElements']))
+                $options['returnMovedElements'] = $this->request['returnMovedElements'];
+
             if(isset($this->request['keepRights']))
                 $options['keepRights'] = $this->request['keepRights'];
+
+            if(isset($this->request['keepDownloadLinks']))
+                $options['keepDownloadLinks'] = $this->request['keepDownloadLinks'];
 
             $this->request['options'] = $options;
 
