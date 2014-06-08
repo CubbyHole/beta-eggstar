@@ -62,6 +62,28 @@ class UserManager extends AbstractManager implements UserManagerInterface{
     }
 
     /**
+     * Conversion inverse de celle de la fonction ci-dessus
+     * @author Alban Truc
+     * @param array $user
+     * @since 08/06/2014
+     * @return array
+     */
+
+    public function reverseConvert($user)
+    {
+        if(is_array($user))
+        {
+            if(isset($user['_id']))
+                $user['_id'] = new MongoId($user['_id']); // string => MongoId
+
+            if(isset($user['idCurrentAccount']))
+                $user['idCurrentAccount'] = new MongoId($user['idCurrentAccount']); // string => MongoId
+        }
+
+        return $user;
+    }
+
+    /**
      * Retrouver un User selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -72,6 +94,8 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function find($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $cursor = parent::__find('user', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
@@ -103,6 +127,8 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function findOne($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__findOne('user', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
@@ -172,6 +198,9 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
+        $searchQuery = self::reverseConvert($searchQuery);
+        $updateCriteria = self::reverseConvert($updateCriteria);
+
         $result = parent::__findAndModify('user', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
@@ -190,6 +219,8 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function create($user, $options = array('w' => 1))
     {
+        $user = self::reverseConvert($user);
+
         $result = parent::__create('user', $user, $options);
 
         return $result;
@@ -207,6 +238,9 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function update($criteria, $update, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+        $update = self::reverseConvert($update);
+
         $result = parent::__update('user', $criteria, $update, $options);
 
         return $result;
@@ -224,6 +258,8 @@ class UserManager extends AbstractManager implements UserManagerInterface{
 
     public function remove($criteria, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__remove('user', $criteria, $options);
 
         return $result;

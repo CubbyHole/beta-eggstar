@@ -54,6 +54,25 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
     }
 
     /**
+     * Conversion inverse de la fonction ci-dessus
+     * @author Alban Truc
+     * @param array $refElement
+     * @since 08/06/2014
+     * @return array
+     */
+
+    public function reverseConvert($refElement)
+    {
+        if(is_array($refElement))
+        {
+            if(isset($refElement['_id']))
+                $refElement['_id'] = new MongoId($refElement['_id']); // MongoId => string
+        }
+
+        return $refElement;
+    }
+
+    /**
      * Retrouver un refElement selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -64,6 +83,8 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
 
     public function find($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $cursor = parent::__find('refelement', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
@@ -95,6 +116,8 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
 
     public function findOne($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__findOne('refelement', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
@@ -164,6 +187,9 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
 
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
+        $searchQuery = self::reverseConvert($searchQuery);
+        $updateCriteria = self::reverseConvert($updateCriteria);
+
         $result = parent::__findAndModify('refelement', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
@@ -182,6 +208,8 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
 
     public function create($document, $options = array('w' => 1))
     {
+        $document = self::reverseConvert($document);
+
         $result = parent::__create('refelement', $document, $options);
 
         return $result;
@@ -199,6 +227,9 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
 
     public function update($criteria, $update, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+        $update = self::reverseConvert($update);
+
         $result = parent::__update('refelement', $criteria, $update, $options);
 
         return $result;
@@ -216,6 +247,8 @@ class RefElementManager extends AbstractManager implements RefElementManagerInte
 
     public function remove($criteria, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__remove('refelement', $criteria, $options);
 
         return $result;

@@ -63,6 +63,34 @@ class RightManager extends AbstractManager implements RightManagerInterface{
     }
 
     /**
+     * Conversion inverse de celle de la fonction ci-dessus
+     * @author Alban Truc
+     * @param array $right
+     * @since 08/06/2014
+     * @return array
+     */
+
+    public function reverseConvert($right)
+    {
+        if(is_array($right))
+        {
+            if(isset($right['_id']))
+                $right['_id'] = new MongoId($right['_id']); // string => MongoId
+
+            if(isset($right['idUser']))
+                $right['idUser'] = new MongoId($right['idUser']); // string => MongoId
+
+            if(isset($right['idElement']))
+                $right['idElement'] = new MongoId($right['idElement']); // string => MongoId
+
+            if(isset($right['idRefRight']))
+                $right['idRefRight'] = new MongoId($right['idRefRight']); // string => MongoId
+        }
+
+        return $right;
+    }
+
+    /**
      * Retrouver un droit selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -73,6 +101,8 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function find($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $cursor = parent::__find('right', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
@@ -104,6 +134,8 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function findOne($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__findOne('right', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
@@ -173,6 +205,9 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
+        $searchQuery = self::reverseConvert($searchQuery);
+        $updateCriteria = self::reverseConvert($updateCriteria);
+
         $result = parent::__findAndModify('right', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
@@ -191,6 +226,8 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function create($document, $options = array('w' => 1))
     {
+        $document = self::reverseConvert($document);
+
         $result = parent::__create('right', $document, $options);
 
         return $result;
@@ -208,6 +245,9 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function update($criteria, $update, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+        $update = self::reverseConvert($update);
+
         $result = parent::__update('right', $criteria, $update, $options);
 
         return $result;
@@ -225,6 +265,8 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function remove($criteria, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__remove('right', $criteria, $options);
 
         return $result;

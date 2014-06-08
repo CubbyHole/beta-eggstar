@@ -56,6 +56,25 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
     }
 
     /**
+     * Conversion inverse de celle de la fonction ci-dessus
+     * @author Alban Truc
+     * @param array $refPlan
+     * @since 30/04/2014
+     * @return array
+     */
+
+    public function reverseConvert($refPlan)
+    {
+        if(is_array($refPlan))
+        {
+            if(isset($refPlan['_id']))
+                $refPlan['_id'] = new MongoId($refPlan['_id']); // string => MongoId
+        }
+
+        return $refPlan;
+    }
+
+    /**
      * Retrouver un refPlan selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -66,6 +85,8 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
     public function find($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $cursor = parent::__find('refplan', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
@@ -97,6 +118,8 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
     public function findOne($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__findOne('refplan', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
@@ -240,6 +263,9 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
+        $searchQuery = self::reverseConvert($searchQuery);
+        $updateCriteria = self::reverseConvert($updateCriteria);
+
         $result = parent::__findAndModify('refplan', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
@@ -258,6 +284,9 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
     public function update($criteria, $update, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+        $update = self::reverseConvert($update);
+
         $result = parent::__update('refplan', $criteria, $update, $options);
 
         return $result;
@@ -275,6 +304,8 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
     public function remove($criteria, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__remove('refplan', $criteria, $options);
 
         return $result;
@@ -292,6 +323,8 @@ class RefPlanManager extends AbstractManager implements RefPlanManagerInterface{
 
     public function create($document, $options = array('w' => 1))
     {
+        $document = self::reverseConvert($document);
+
         $result = parent::__create('refplan', $document, $options);
 
         return $result;

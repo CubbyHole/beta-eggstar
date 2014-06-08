@@ -60,6 +60,31 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
     }
 
     /**
+     * Conversion inverse de celle de la fonction ci-dessus
+     * @author Alban Truc
+     * @param array $element
+     * @since 08/06/2014
+     * @return array
+     */
+
+    public function reverseConvert($element)
+    {
+        if(is_array($element))
+        {
+            if(isset($element['_id']))
+                $element['_id'] = new MongoId($element['_id']); // string => MongoId
+
+            if(isset($element['idOwner']))
+                $element['idOwner'] = new MongoId($element['idOwner']); // string => MongoId
+
+            if(isset($element['idRefElement']))
+                $element['idRefElement'] = new MongoId($element['idRefElement']); // string => MongoId
+        }
+
+        return $element;
+    }
+
+    /**
      * Retrouver un élément selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -70,6 +95,8 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function find($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $cursor = parent::__find('element', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
@@ -101,6 +128,8 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function findOne($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__findOne('element', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
@@ -170,6 +199,9 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
+        $searchQuery = self::reverseConvert($searchQuery);
+        $updateCriteria = self::reverseConvert($updateCriteria);
+
         $result = parent::__findAndModify('element', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
@@ -188,6 +220,8 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function create($document, $options = array('w' => 1))
     {
+        $document = self::reverseConvert($document);
+
         $result = parent::__create('element', $document, $options);
 
         return $result;
@@ -205,6 +239,9 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function update($criteria, $update, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+        $update = self::reverseConvert($update);
+
         $result = parent::__update('element', $criteria, $update, $options);
 
         return $result;
@@ -222,6 +259,8 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function remove($criteria, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__remove('element', $criteria, $options);
 
         return $result;
@@ -243,11 +282,13 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function returnElementsDetails($idUser, $isOwner, $path = 'all', $elementName = NULL)
     {
+        $idUser = new MongoId($idUser);
+
         if($isOwner == '1')
         {
             $criteria = array(
                 'state' => (int)1,
-                'idOwner' => new MongoId($idUser)
+                'idOwner' => $idUser
             );
 
             if($path != 'all')
@@ -303,9 +344,11 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
     public function returnSharedElementsDetails($idUser, $path = 'all', $elementName = NULL)
     {
+        $idUser = new MongoId($idUser);
+
         $criteria = array(
             'state' => (int)1,
-            'idUser' => new MongoId($idUser)
+            'idUser' => $idUser
         );
 
         //récupération des droits sur les éléments

@@ -54,6 +54,25 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
     }
 
     /**
+     * Conversion inverse de celle de la fonction ci-dessus
+     * @author Alban Truc
+     * @param array $refRight
+     * @since 08/06/2014
+     * @return array
+     */
+
+    public function reverseConvert($refRight)
+    {
+        if(is_array($refRight))
+        {
+            if(isset($refRight['_id']))
+                $refRight['_id'] = new MongoId($refRight['_id']); // string => MongoId
+        }
+
+        return $refRight;
+    }
+
+    /**
      * Retrouver un refRight selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -64,6 +83,8 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
 
     public function find($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $cursor = parent::__find('refright', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
@@ -95,6 +116,8 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
 
     public function findOne($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__findOne('refright', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
@@ -164,6 +187,9 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
 
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
+        $searchQuery = self::reverseConvert($searchQuery);
+        $updateCriteria = self::reverseConvert($updateCriteria);
+
         $result = parent::__findAndModify('refright', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
@@ -182,6 +208,8 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
 
     public function create($document, $options = array('w' => 1))
     {
+        $document = self::reverseConvert($document);
+
         $result = parent::__create('refright', $document, $options);
 
         return $result;
@@ -199,6 +227,9 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
 
     public function update($criteria, $update, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+        $update = self::reverseConvert($update);
+
         $result = parent::__update('refright', $criteria, $update, $options);
 
         return $result;
@@ -216,6 +247,8 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
 
     public function remove($criteria, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__remove('refright', $criteria, $options);
 
         return $result;

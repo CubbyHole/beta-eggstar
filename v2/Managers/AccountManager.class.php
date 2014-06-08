@@ -73,6 +73,39 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
     }
 
     /**
+     * Conversion inverse de celle de la fonction ci-dessus
+     * @author Alban Truc
+     * @param array $account
+     * @since 08/06/2014
+     * @return array
+     */
+
+    public function reverseConvert($account)
+    {
+        if(is_array($account))
+        {
+            if(isset($account['_id']))
+                $account['_id'] = new MongoId($account['_id']); // string => MongoId
+
+            if(isset($account['idUser']))
+                $account['idUser'] = new MongoId($account['idUser']); // string => MongoId
+
+            if(isset($account['idRefPlan']))
+                $account['idRefPlan'] = new MongoId($account['idRefPlan']); // string => MongoId
+
+            //Dates: timestamp => array contenant timestamp, date formatée et heure formatée
+
+            if(isset($account['startDate']) && isset($account['startDate']['timestamp']))
+                $account['startDate'] = new MongoDate($account['startDate']['timestamp']);
+
+            if(isset($account['endDate']) && isset($account['endDate']['timestamp']))
+                $account['endDate'] = new MongoDate($account['endDate']['timestamp']);
+        }
+
+        return $account;
+    }
+
+    /**
      * Retrouver un Account selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
@@ -83,6 +116,8 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function find($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $cursor = parent::__find('account', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
@@ -114,6 +149,8 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function findOne($criteria, $fieldsToReturn = array())
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__findOne('account', $criteria, $fieldsToReturn);
         $result = self::convert($result);
         return $result;
@@ -182,6 +219,9 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function findAndModify($searchQuery, $updateCriteria, $fieldsToReturn = NULL, $options = NULL)
     {
+        $searchQuery = self::reverseConvert($searchQuery);
+        $updateCriteria = self::reverseConvert($updateCriteria);
+
         $result = parent::__findAndModify('account', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
@@ -201,6 +241,8 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function create($account, $options = array('w' => 1))
     {
+        $account = self::reverseConvert($account);
+
         $result = parent::__create('account', $account, $options);
 
         return $result;
@@ -218,6 +260,9 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function update($criteria, $update, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+        $update = self::reverseConvert($update);
+
         $result = parent::__update('account', $criteria, $update, $options);
 
         return $result;
@@ -235,6 +280,8 @@ class AccountManager extends AbstractManager implements AccountManagerInterface
 
     public function remove($criteria, $options = array('w' => 1))
     {
+        $criteria = self::reverseConvert($criteria);
+
         $result = parent::__remove('account', $criteria, $options);
 
         return $result;
