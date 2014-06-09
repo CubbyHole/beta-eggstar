@@ -154,6 +154,12 @@ class Eggstar extends API
             if(isset($this->request['keepDownloadLinks']))
                 $options['keepDownloadLinks'] = $this->request['keepDownloadLinks'];
 
+            if(isset($this->request['folderName']))
+                $options['folderName'] = $this->request['folderName'];
+
+            if(isset($this->request['inheritRightsFromParent']))
+                $options['inheritRightsFromParent'] = $this->request['inheritRightsFromParent'];
+
             $this->request['options'] = $options;
 
             return handleActions($this->request);

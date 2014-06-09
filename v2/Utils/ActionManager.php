@@ -16,6 +16,7 @@ function handleActions($request)
         switch ($request['action'])
         {
             case 'createNewFolder':
+                return createNewFolder($request['idUser'], $request['path'], $request['folderName'], $request['inheritRightsFromParent']);
                 break;
             case 'rename':
                 break;
@@ -1168,7 +1169,6 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                             $operationSuccess = TRUE;
 
                             return prepareMoveReturn($options, $operationSuccess, array(), $impactedElements, $movedElements, $failedToMove);
-
                         }
                         else return prepareMoveReturn($options, $operationSuccess, $isElementAFolder, $impactedElements, $movedElements, $failedToMove);
                     }
@@ -1181,4 +1181,170 @@ function moveHandler($idElement, $idUser, $path, $options = array())
         else return prepareMoveReturn($options, $operationSuccess, array('error' => 'Access denied'), $impactedElements, $movedElements, $failedToMove);
     }
     else return prepareMoveReturn($options, $operationSuccess, $hasRight, $impactedElements, $movedElements, $failedToMove);
+}
+
+/**
+ * Crée un nouveau dossier vierge à l'emplacement voulu.
+ * @author Alban Truc
+ * @param string|MongoId $idUser
+ * @param string $path
+ * @param string $folderName
+ * @param bool $inheritRightsFromParent
+ * @since 09/06/2014
+ * @return array|bool|Element|Element[]|TRUE  -- à vérifier
+ */
+
+function createNewFolder($idUser, $path, $folderName, $inheritRightsFromParent)
+{
+    $idUser = new MongoId($idUser);
+
+    $operationSuccess = FALSE;
+
+    $elementManager = new ElementManager();
+
+    if($path != '/')
+    {
+        //récupération du dossier parent
+        $explode = explode('/', $path);
+        $parentDirectoryName = $explode[sizeof($explode) - 2];
+        $parentDirectoryPath = array_slice($explode, 0, sizeof($explode) - 2);
+
+        $parentElementCriteria = array(
+            'state' => (int)1,
+            'name' => $parentDirectoryName,
+            'serverPath' => $parentDirectoryPath,
+            'idOwner' => $idUser
+        );
+
+        $parentElement = $elementManager->findOne($parentElementCriteria);
+
+        if(!(array_key_exists('error', $parentElement)))
+        {
+            /*
+             * 11 correspond au droit de lecture et écriture.
+             * Si on souhaite accepter la copie avec des droits de plus bas niveau, il suffit d'ajouter les codes correspondant
+             * au tableau en 3e paramètre ci-dessous.
+             */
+
+            $hasRight = actionAllowed($parentElement['_id'], $idUser, array('11'));
+
+            if(is_bool($hasRight) && $hasRight == FALSE)
+                return array('error' => 'Creation not allowed.');
+            elseif(is_array($hasRight))
+                return $hasRight;
+        }
+        else return $parentElement;
+    }
+
+    //vérification qu'il n'existe pas déjà un dossier avec le même nom
+    $elementCriteria = array(
+        'state' => (int)1,
+        'name' => $folderName,
+        'serverPath' => $path,
+        'idOwner' => $idUser
+    );
+
+    $elementsWithSameName = $elementManager->find($elementCriteria);
+
+    if(is_array($elementsWithSameName) && array_key_exists('error', $elementsWithSameName))
+    {
+        if($elementsWithSameName['error'] != 'No match found.')
+            return $elementsWithSameName;
+    }
+    else
+    {
+        foreach($elementsWithSameName as $key => $elementWithSameName)
+        {
+            $isFolder = isFolder($elementWithSameName['idRefElement']);
+            if(is_bool($isFolder))
+            {
+                if($isFolder == FALSE)
+                {
+                    unset($elementsWithSameName[$key]);
+                }
+            }
+            else return $isFolder;
+        }
+
+        if(!(empty($elementsWithSameName)))
+            return array('error' => 'Folder name not available.');
+    }
+
+    //Récupération de l'id de RefElement dossier vide
+    $refElementPdoManager = new RefElementPdoManager();
+    $emptyFolder = $refElementPdoManager->findOne(array('state' => 1, 'code' => '4002'), array('_id' => TRUE));
+
+    $newFolder = array(
+        'state' => 1,
+        'name' => $folderName,
+        'idOwner' => $idUser,
+        'idRefElement' => $emptyFolder['_id'],
+        'serverPath' => $path
+    );
+
+    $insertResult = $elementManager->create($newFolder);
+
+    if(is_bool($insertResult))
+    {
+        if($insertResult == TRUE)
+        {
+            //Le dossier parent était vide
+            if($parentElement['idRefElement'] == $emptyFolder['_id'])
+            {
+                //on change l'id du dossier parent pour dossier non vide
+                $notEmptyFolder = $refElementPdoManager->findOne(array('state' => 1, 'code' => '4003'), array('_id' => TRUE));
+                $update = array(
+                    '$set' => array(
+                        'idRefElement' => $notEmptyFolder['_id']
+                    )
+                );
+
+                //dans le cas où on voudrait récupérer le dossier parent mis à jour, on peut utiliser $updatedFolder
+                $updatedFolder = $elementManager->findAndModify($newFolder, $update, array('new' => TRUE));
+                if(!(array_key_exists('error', $updatedFolder)))
+                    $operationSuccess = TRUE;
+            }
+
+            if($inheritRightsFromParent == 'TRUE')
+            {
+                //récupération des droits appliqués sur le dossier parent
+                $rightManager = new RightManager();
+
+                $rightCriteria = array(
+                    'state' => 1,
+                    'idElement' => $parentElement['_id']
+                );
+
+                $rights = $rightManager->find($rightCriteria);
+
+                if(!(array_key_exists('error', $rights)))
+                {
+                    //récupération du dossier précédemment inséré
+                    $newElement = $elementManager->findOne($newFolder);
+
+                    if(!(array_key_exists('error', $newElement)))
+                    {
+                        $insertRightCopy = array();
+                        foreach($rights as $right)
+                        {
+                            $rightCopy = $right;
+                            $rightCopy['_id'] = new MongoId();
+                            $rightCopy['idElement'] = $newElement['_id'];
+
+                            $insertRightCopy[] = $elementManager->create($rightCopy);
+                            //on pourrait se servir de $insertRightCopy pour identifier les erreurs éventuelles
+                        }
+                        //@todo vérifier que tous les insertRightCopy sont OK et si c'est le cas operationSuccess = TRUE
+                        $operationSuccess = TRUE;
+                    }
+                    else return $newElement;
+                }
+            }
+
+            $operationSuccess = TRUE;
+            return $operationSuccess;
+        }
+        else return array('error' => 'Could not create folder in database.');
+    }
+    else return $insertResult;
 }
