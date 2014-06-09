@@ -1119,7 +1119,8 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                                 $elementCopy = $impactedElement;
 
                                 if(count($impactedElements) != $key+1)
-                                {$explode = explode($serverPath, $elementCopy['serverPath']);
+                                {
+                                    $explode = explode($serverPath, $elementCopy['serverPath']);
                                     if(isset($explode[1]) && $explode[1] != '')
                                     {
                                         $elementPath = $path.$elementNameInDestination.'/'.$explode[1];
@@ -1131,6 +1132,7 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                                 else
                                 {
                                     $elementCopy['name'] = $elementNameInDestination;
+                                    $elementCopy['serverPath'] = $path;
                                 }
 
                                 if(array_key_exists('keepDownloadLinks', $options) && $options['keepDownloadLinks'] == 'FALSE')
