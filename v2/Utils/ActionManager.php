@@ -15,6 +15,8 @@ function handleActions($request)
     {
         switch ($request['action'])
         {
+            case 'createNewFolder':
+                break;
             case 'rename':
                 break;
             case 'move':
@@ -107,11 +109,12 @@ function isFolder($refElementId)
  * permet également de modifier le statut d'un dossier à notempty après une copie dans le-dit dossier
  * @author Harry Bellod - adapté pour l'API par Alban Truc
  * @param string $serverPath (de l'élément disable ou du dossier où l'on copie)
+ * @param string|MongoId $idOwner
  * @since 07/06/2014
  * @return bool true si update ok
  */
 
-function updateFolderStatus($serverPath)
+function updateFolderStatus($serverPath, $idOwner)
 {
     $elementManager = new ElementManager();
     $refElementManager = new RefElementManager();
@@ -119,7 +122,13 @@ function updateFolderStatus($serverPath)
     if($serverPath != '/')
     {
         //on vérifie s'il reste des éléments actifs dans le dossier où l'on désactive l'élément
-        $elements = $elementManager->find(array('serverPath' => $serverPath, 'state' => 1));
+        $criteria = array(
+            'state' => 1,
+            'serverPath' => $serverPath,
+            'idOwner' => $idOwner
+        );
+
+        $elements = $elementManager->find($criteria);
 
         //s'il n'y en a plus alors on passe le dossier courant à empty
         if(array_key_exists('error', $elements))
@@ -145,10 +154,15 @@ function updateFolderStatus($serverPath)
 
         // on récupère son serverPath
         $pattern = "#".$currentDirectory."/#";
-        $path = preg_replace($pattern, '', $serverPath,1);
+        $path = preg_replace($pattern, '', $serverPath, 1);
 
         // on réalise une màj sur le dossier en question pour modifier son refElement (à Directory File Empty)
-        $criteria = array('state' => (int) 1, 'name' => $currentDirectory, 'serverPath' => $path);
+        $criteria = array(
+            'state' => (int) 1,
+            'name' => $currentDirectory,
+            'serverPath' => $path,
+            'idOwner' => $idOwner
+        );
 
         $update = array(
             '$set' => array('idRefElement' => $idRefElement)
@@ -292,121 +306,122 @@ function disableRights($elementList)
  * effectivement un fichier). On ne peut donc pas avoir dans un même emplacement un fichier test.flac et test.mp3.
  * @author Alban Truc
  * @param string $path
- * @param array $element
+ * @param string $elementName
+ * @param string|MongoId $idOwner
  * @since 07/06/2014
  * @return array|Element[]|string
  */
 
-function avoidNameCollision($path, $element)
+function avoidNameCollision($path, $elementName, $idOwner)
 {
-    if(is_array($element))
-    {
-        $elementManager = new ElementManager();
 
-        //un élément avec le même nom n'est-il pas déjà présent?
-        $seekForNameDuplicate = array(
+    $elementManager = new ElementManager();
+
+    $idOwner = new MongoId($idOwner);
+
+    //un élément avec le même nom n'est-il pas déjà présent?
+    $seekForNameDuplicate = array(
+        'state' => (int)1,
+        'serverPath' => $path,
+        'name' => $elementName,
+        'idOwner' => $idOwner
+    );
+
+    $elementsWithSameName = $elementManager->find($seekForNameDuplicate);
+    //var_dump($elementsWithSameName);
+
+    if(array_key_exists('error', $elementsWithSameName))
+    {
+        //cas no match found => pas d'élément avec le même nom à l'emplacement de destination
+        if($elementsWithSameName['error'] == 'No match found.')
+        {
+            $elementNameInDestination = $elementName;
+        }
+        else return $elementsWithSameName;
+    }
+    else //nom déjà utilisé
+    {
+        //existe-t-il déjà des copies?
+        $seekForCopies = array(
             'state' => (int)1,
             'serverPath' => $path,
-            'name' => $element['name']
+            'name' => new MongoRegex("/^".$elementName." - Copy/i"),
+            'idOwner' => $idOwner
         );
 
-        $elementsWithSameName = $elementManager->find($seekForNameDuplicate);
-        //var_dump($elementsWithSameName);
+        $duplicate = $elementManager->find($seekForCopies, array('name' => TRUE, '_id' => FALSE));
+        //var_dump($duplicate);
 
-        if(array_key_exists('error', $elementsWithSameName))
+        if(array_key_exists('error', $duplicate))
         {
-            //cas no match found => pas d'élément avec le même nom à l'emplacement de destination
-            if($elementsWithSameName['error'] == 'No match found.')
+            //cas où il n'y a pas de copie
+            if($duplicate['error'] == 'No match found.')
             {
-                $elementNameInDestination = $element['name'];
+                $elementNameInDestination = $elementName.' - Copy';
             }
-            else return $elementsWithSameName;
+            else return $duplicate;
         }
-        else //nom déjà utilisé
+        else //une ou plusieurs copies ont été trouvées
         {
-            //existe-t-il déjà des copies?
-            $seekForCopies = array(
-                'state' => (int)1,
-                'serverPath' => $path,
-                'name' => new MongoRegex("/^".$element['name']." - Copy/i")
-            );
+            /**
+             * actuellement nous avons un tableau de tableaux contenant les noms des duplicats.
+             * Exemple: array ( [0] => array ( ['name'] => 'duplicaName' ) )
+             * La manipulation suivante sert à enlever un "étage" pour obtenir par exemple
+             * array ( [0] => 'duplicataName' ).
+             * Nos environnements de développement ne disposant pas de PHP 5.5.0, nous ne pouvons
+             * utiliser pour cela la fonction array_column. En remplacement, nous appliquons une
+             * fonction via array_map.
+             * @see http://www.php.net/manual/en/function.array-column.php
+             * @see http://www.php.net/manual/en/function.array-map.php
+             */
 
-            $duplicate = $elementManager->find($seekForCopies, array('name' => TRUE, '_id' => FALSE));
+            $f = function($array){return $array['name'];};
+            $duplicate = array_map($f, $duplicate);
             //var_dump($duplicate);
-
-            if(array_key_exists('error', $duplicate))
-            {
-                //cas où il n'y a pas de copie
-                if($duplicate['error'] == 'No match found.')
-                {
-                    $elementNameInDestination = $element['name'].' - Copy';
-                }
-                else return $duplicate;
-            }
-            else //une ou plusieurs copies ont été trouvées
+            //@see http://www.php.net/manual/en/function.in-array.php
+            if(!(in_array($elementName.' - Copy', $duplicate)))
+                $elementNameInDestination = $elementName.' - Copy';
+            else
             {
                 /**
-                 * actuellement nous avons un tableau de tableaux contenant les noms des duplicats.
-                 * Exemple: array ( [0] => array ( ['name'] => 'duplicaName' ) )
-                 * La manipulation suivante sert à enlever un "étage" pour obtenir par exemple
-                 * array ( [0] => 'duplicataName' ).
-                 * Nos environnements de développement ne disposant pas de PHP 5.5.0, nous ne pouvons
-                 * utiliser pour cela la fonction array_column. En remplacement, nous appliquons une
-                 * fonction via array_map.
-                 * @see http://www.php.net/manual/en/function.array-column.php
-                 * @see http://www.php.net/manual/en/function.array-map.php
+                 * @see http://www.php.net/manual/en/function.unset.php
+                 * @see http://www.php.net/manual/en/function.array-search.php
+                 * Supprime dans le tableau la valeur correspondant à
+                 * $element->getName().' - Copy' pour simplifier les opérations suivantes
+                 */
+                unset($duplicate[array_search($elementName.' - Copy', $duplicate)]);
+
+                //@see http://www.php.net/manual/en/function.sort.php cf. exemple #2
+                sort($duplicate, SORT_NATURAL | SORT_FLAG_CASE);
+                //var_dump($duplicate);
+
+                /*
+                 * déterminer quel nom du type elementName - Copy (number) est disponible,
+                 * avec number le plus proche possible de 0
                  */
 
-                $f = function($array){return $array['name'];};
-                $duplicate = array_map($f, $duplicate);
-                //var_dump($duplicate);
-                //@see http://www.php.net/manual/en/function.in-array.php
-                if(!(in_array($element['name'].' - Copy', $duplicate)))
-                    $elementNameInDestination = $element['name'].' - Copy';
-                else
+                //Le "number" dont il était question plus haut commence à 2
+                $copyNumberIndex = 2;
+                //var_dump($duplicate); exit();
+                if(!(empty($duplicate))) //Plus d'une copie
                 {
-                    /**
-                     * @see http://www.php.net/manual/en/function.unset.php
-                     * @see http://www.php.net/manual/en/function.array-search.php
-                     * Supprime dans le tableau la valeur correspondant à
-                     * $element->getName().' - Copy' pour simplifier les opérations suivantes
-                     */
-                    unset($duplicate[array_search($element['name'].' - Copy', $duplicate)]);
-
-                    //@see http://www.php.net/manual/en/function.sort.php cf. exemple #2
-                    sort($duplicate, SORT_NATURAL | SORT_FLAG_CASE);
-                    //var_dump($duplicate);
-
-                    /*
-                     * déterminer quel nom du type elementName - Copy (number) est disponible,
-                     * avec number le plus proche possible de 0
-                     */
-
-                    //Le "number" dont il était question plus haut commence à 2
-                    $copyNumberIndex = 2;
-                    //var_dump($duplicate); exit();
-                    if(!(empty($duplicate))) //Plus d'une copie
+                    $count = 0;
+                    while(isset($duplicate[$count]))
                     {
-                        $count = 0;
-                        while(isset($duplicate[$count]))
+                        if($duplicate[$count]==$elementName.' - Copy ('.$copyNumberIndex.')')
                         {
-                            if($duplicate[$count]==$element['name'].' - Copy ('.$copyNumberIndex.')')
-                            {
-                                $copyNumberIndex++;
-                            }
-                            $count++;
+                            $copyNumberIndex++;
                         }
+                        $count++;
                     }
-//                    var_dump($copyNumberIndex);
-                    $elementNameInDestination = $element['name'].' - Copy ('.$copyNumberIndex.')';
-//                    var_dump($elementNameInDestination); exit();
                 }
+//                    var_dump($copyNumberIndex);
+                $elementNameInDestination = $elementName.' - Copy ('.$copyNumberIndex.')';
+//                    var_dump($elementNameInDestination); exit();
             }
         }
-        return $elementNameInDestination;
     }
-    else
-        return array('error' => 'array required');
+    return $elementNameInDestination;
 }
 
 /**
@@ -552,6 +567,7 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = 'false')
                             //notre criteria inclut tous les éléments se trouvant dans le dossier et ses dossiers enfants
                             $elementCriteria = array(
                                 'state' => (int) 1,
+                                'idOwner' => $idUser,
                                 '$or' => array(
                                     array('_id' => $idElement),
                                     array('serverPath' => new MongoRegex("/^$serverPath/i"))
@@ -594,7 +610,7 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = 'false')
                         {
                             if($elementUpdateResult === TRUE)
                             {
-                                $updateFolderStatus = updateFolderStatus($element['serverPath']);
+                                $updateFolderStatus = updateFolderStatus($element['serverPath'], $idUser);
 
                                 if(is_bool($updateFolderStatus) && $updateFolderStatus === TRUE)
                                 {
@@ -605,7 +621,8 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = 'false')
                                     foreach($impactedElements as $impactedElement)
                                     {
                                         //création d'un tableau contenant uniquement les id des éléments impactés
-                                        $idImpactedElements[]['idElementImpacted'] = $impactedElement['_id'];
+                                        if(isset($impactedElement['_id']))
+                                            $idImpactedElements[]['idElementImpacted'] = $impactedElement['_id'];
 
                                         //création d'un tableau contenant uniquement la taille de chaque élément impacté
                                         if(isset($impactedElement['size']))
@@ -715,7 +732,6 @@ function copyHandler($idElement, $idUser, $path, $options = array())
     $idUser = new MongoId($idUser);
 
     $impactedElements = array();
-    $impactedElements = array();
     $pastedElements = array();
     $failedToPaste = array();
 
@@ -745,6 +761,7 @@ function copyHandler($idElement, $idUser, $path, $options = array())
                     {
                         $elementCriteria = array(
                             'state' => (int)1,
+                            'idOwner' => $idUser
                         );
 
                         /*
@@ -787,7 +804,7 @@ function copyHandler($idElement, $idUser, $path, $options = array())
                         }
                     }
 
-                    $elementNameInDestination = avoidNameCollision($path, $element);
+                    $elementNameInDestination = avoidNameCollision($path, $element['name'], $idUser);
 
                     if(is_string($elementNameInDestination))
                     {
@@ -833,7 +850,8 @@ function copyHandler($idElement, $idUser, $path, $options = array())
                                 //récupération des éléments contenus dans le dossier
                                 $seekElementsInFolder = array(
                                     'state' => (int)1,
-                                    'serverPath' => new MongoRegex("/^$serverPath/i")
+                                    'serverPath' => new MongoRegex("/^$serverPath/i"),
+                                    'idOwner' => $idUser
                                 );
 
                                 $elementsInFolder = $elementManager->find($seekElementsInFolder);
@@ -908,7 +926,7 @@ function copyHandler($idElement, $idUser, $path, $options = array())
                                 }
 
                                 // Lors de copie dans un dossier, on vérifie si le dossier était empty. Au quel cas on le passe à NotEmpty
-                                updateFolderStatus($path);
+                                updateFolderStatus($path, $idUser);
 
                                 if(array_key_exists('keepRights', $options) && $options['keepRights'] == 'TRUE')
                                     copyRights($impactedElements, $pastedElements);
@@ -1018,6 +1036,7 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                     {
                         $elementCriteria = array(
                             'state' => (int)1,
+                            'idOwner' => $idUser
                         );
 
                         /*
@@ -1059,7 +1078,7 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                         }
                     }
 
-                    $elementNameInDestination = avoidNameCollision($path, $element);
+                    $elementNameInDestination = avoidNameCollision($path, $element['name'], $idUser);
 
                     if(is_string($elementNameInDestination))
                     {
@@ -1074,7 +1093,8 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                                 //récupération des éléments contenus dans le dossier
                                 $seekElementsInFolder = array(
                                     'state' => (int)1,
-                                    'serverPath' => new MongoRegex("/^$serverPath/i")
+                                    'serverPath' => new MongoRegex("/^$serverPath/i"),
+                                    'idOwner' => $idUser
                                 );
 
                                 $elementsInFolder = $elementManager->find($seekElementsInFolder);
@@ -1136,7 +1156,7 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                              * Si le déplacement vide un dossier ou rempli un dossier qui était vide,
                              * on met à jour son refElement
                              */
-                            updateFolderStatus($path);
+                            updateFolderStatus($path, $idUser);
 
                             if(array_key_exists('keepRights', $options) && $options['keepRights'] == 'FALSE')
                                 disableRights($impactedElements);
