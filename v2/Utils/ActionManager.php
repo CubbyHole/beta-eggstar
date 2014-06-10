@@ -19,6 +19,7 @@ function handleActions($request)
                 return createNewFolder($request['idUser'], $request['path'], $request['folderName'], $request['inheritRightsFromParent']);
                 break;
             case 'rename':
+                return renameHandler($request['idElement'], $request['idUser'], $request['name'], $request['options']);
                 break;
             case 'move':
                 return moveHandler($request['idElement'], $request['idUser'], $request['path'], $request['options']);
@@ -475,7 +476,7 @@ function prepareCopyReturn($options, $operationSuccess, $error, $elementsImpacte
 }
 
 /**
- * Prépare le retour de la fonction moveHandler
+ * Prépare le retour des fonctions moveHandler et renameHandler
  * @author Alban Truc
  * @param array $options
  * @param bool $operationSuccess
@@ -958,23 +959,199 @@ function copyHandler($idElement, $idUser, $path, $options = array())
     else return prepareCopyReturn($options, $operationSuccess, $hasRight, $impactedElements, $pastedElements, $failedToPaste);
 }
 
-function renameHandler($idElement, $idUser, $newName)
+/**
+ * Prépare le retour de la fonction renameHandler.
+ * On pourrait se servir de prepareMoveReturn étant donné que la structure est similaire, mais en faisant une autre
+ * fonction, on peut différencier les indexes, les messages, etc et être mieux préparé à de possibles modifications.
+ * @author Alban Truc
+ * @param array $options
+ * @param bool $operationSuccess
+ * @param string|array $error
+ * @param array $elementsImpacted
+ * @param array $updatedElements
+ * @param array $failedToUpdate
+ * @return array
+ */
+
+function prepareRenameReturn($options, $operationSuccess, $error, $elementsImpacted, $updatedElements, $failedToUpdate)
+{
+    $return = array();
+    $elementManager = new ElementManager();
+    $return['operationSuccess'] = $operationSuccess;
+
+    if(is_array($error) && array_key_exists('error', $error))
+        $return['error'] = $error['error'];
+    else
+        $return['error'] = $error;
+
+    if(is_array($options))
+    {
+        if(array_key_exists('returnImpactedElements', $options) && $options['returnImpactedElements'] == 'TRUE')
+        {
+            if(empty($elementsImpacted))
+                $return['elementsImpacted'] = 'No impacted element or the function had an error before the element(s) got retrieved.';
+            else
+                $return['elementsImpacted'] = $elementManager->convert($elementsImpacted);
+        }
+
+        if(array_key_exists('returnUpdatedElements', $options) && $options['returnUpdatedElements'] == 'TRUE')
+        {
+            if(empty($updatedElements))
+                $return['updatedElements'] = 'No updated element or the function had an error before trying to.';
+            else
+                $return['updatedElements'] = $elementManager->convert($updatedElements);
+
+            if(empty($failedToUpdate))
+                $return['failedToUpdate'] = 'No fail or the function had an error before trying to.';
+            else
+                $return['failedToUpdate'] = $elementManager->convert($failedToUpdate);
+        }
+    }
+    return $return;
+}
+
+/**
+ * Renomme un élément et met à jour le serverPath de ses enfants dans le cas d'un dossier
+ * $options est un tableau de booléens avec comme indexes possibles:
+ * - returnImpactedElements à true pour retourner les éléments à modifier
+ * - returnUpdatedElements à true pour retourner les éléments modifiés
+ * On peut se retrouver avec la structure de retour suivante:
+ *  array(
+ *          'operationSuccess' => true ou false,
+ *          'error' => 'message d'erreur',
+ *          'impactedElements' => array(),
+ *          'updatedElements' => array(),
+ *          'failedToUpdate' => array()
+ *  )
+ * @author Alban Truc
+ * @param string|MongoId $idElement
+ * @param string|MongoId $idUser
+ * @param string $newName
+ * @param array $options
+ * @return array
+ */
+
+function renameHandler($idElement, $idUser, $newName, $options = array())
 {
     $idElement = new MongoId($idElement);
     $idUser = new MongoId($idUser);
 
-    // 11 correspond au droit de lecture et écriture
-    $hasRight = actionAllowed($idElement, $idUser, '11');
+    $impactedElements = array();
+    $updatedElements = array();
+    $failedToUpdate = array();
+
+    $operationSuccess = FALSE;
+
+    /*
+     * 11 correspond au droit de lecture et écriture.
+     * Si on souhaite accepter la copie avec des droits de plus bas niveau, il suffit d'ajouter les codes correspondant
+     * au tableau en 3e paramètre ci-dessous.
+     */
+
+    $hasRight = actionAllowed($idElement, $idUser, array('11'));
 
     if(!(is_array($hasRight)))
     {
         if($hasRight === TRUE)
         {
+            //récupère l'élément
+            $elementManager = new ElementManager();
+            $element = $elementManager->findById($idElement);
 
+            if(!(array_key_exists('error', $element)))
+            {
+                if($element['state'] == 1)
+                {
+                    $criteria = array(
+                        'state' => (int)1,
+                        'name' => $newName,
+                        'serverPath' => $element['serverPath'],
+                        'idOwner' => $idUser
+                    );
+
+                    $elementsWithSameName = $elementManager->find($criteria);
+
+                    if(is_array($elementsWithSameName) && array_key_exists('error', $elementsWithSameName))
+                    {
+                        if($elementsWithSameName['error'] != 'No match found.')
+                            return $elementsWithSameName;
+                    }
+                    //@todo rename sur le serveur de fichier et obtention du nouveau hash si l'élément est un dossier. Puis màj de ce hash
+
+                    $isFolder = isFolder($element['idRefElement']);
+
+                    if(!(is_array($isFolder))) //pas d'erreur
+                    {
+                        if($isFolder == TRUE) //l'élément est un dossier
+                        {
+                            $serverPath = $element['serverPath'].$element['name'].'/';
+
+                            //récupération des éléments contenus dans le dossier
+                            $seekElementsInFolder = array(
+                                'state' => (int)1,
+                                'serverPath' => new MongoRegex("/^$serverPath/i"),
+                                'idOwner' => $idUser
+                            );
+
+                            $elementsInFolder = $elementManager->find($seekElementsInFolder);
+                        }
+
+
+                        if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
+                            $impactedElements = $elementsInFolder;
+
+
+                        $impactedElements[] = $element;
+
+                        $count = 0;
+
+                        foreach($impactedElements as $key => $impactedElement)
+                        {
+                            $updateCriteria = array(
+                                '_id' => $impactedElement['_id'],
+                                'state' => (int)1
+                            );
+                            //préparation de la copie
+                            $elementCopy = $impactedElement;
+
+                            if(count($impactedElements) != $key+1)
+                            {
+                                $impactedElementPath = $impactedElement['serverPath'];
+                                $newPath = preg_replace('/'.$element['name'].'/i', $newName, $impactedElementPath);
+                                $elementCopy['serverPath'] = $newPath;
+                            }
+                            else
+                                $elementCopy['name'] = $newName;
+
+                            //mise à jour
+                            $updateResult = $elementManager->update($updateCriteria, $elementCopy);
+
+                            //gestion des erreurs
+
+                            if(!(is_bool($updateResult))) //erreur
+                            {
+                                $failedToUpdate[$count]['elementToUpdate'] = $impactedElement;
+                                $failedToUpdate[$count]['elementUpdated'] = $elementCopy;
+                                $failedToUpdate[$count]['error'] = $updateResult['error'];
+                                $count++;
+                            }
+                            elseif($updateResult == TRUE)
+                                $updatedElements[] = $elementCopy;
+                        }
+
+                        $operationSuccess = TRUE;
+
+                        return prepareRenameReturn($options, $operationSuccess, array(), $impactedElements, $updatedElements, $failedToUpdate);
+                    }
+                    else return prepareRenameReturn($options, $operationSuccess, $isFolder, $impactedElements, $updatedElements, $failedToUpdate);
+                }
+                else return prepareRenameReturn($options, $operationSuccess, array('error' => 'Element inactivated, nothing to do'), $impactedElements, $updatedElements, $failedToUpdate);
+            }
+            else return prepareRenameReturn($options, $operationSuccess, $element, $impactedElements, $updatedElements, $failedToUpdate);
         }
-        else return array('error' => 'Access denied');
+        else return prepareRenameReturn($options, $operationSuccess, array('error' => 'Access denied'), $impactedElements, $updatedElements, $failedToUpdate);
     }
-    else return $hasRight;
+    else return prepareRenameReturn($options, $operationSuccess, $hasRight, $impactedElements, $updatedElements, $failedToUpdate);
 }
 
 /**
