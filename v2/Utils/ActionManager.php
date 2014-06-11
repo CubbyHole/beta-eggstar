@@ -82,12 +82,13 @@ function actionAllowed($idElement, $idUser, $refRightCodes)
  * faux sinon ou un tableau avec l'index error en cas d'erreur.
  * @author Alban Truc
  * @param MongoId|string $refElementId
+ * @param bool $returnFalseIfEmpty pour vérifier en plus que le dossier n'est pas vide
  * @since 04/06/2014
  * @return array|bool
  * @todo employer cette fonction dans la fonction disableHandler
  */
 
-function isFolder($refElementId)
+function isFolder($refElementId, $returnFalseIfEmpty = FALSE)
 {
     $refElementId = new MongoId($refElementId);
 
@@ -99,7 +100,14 @@ function isFolder($refElementId)
     {
         //si le code commence par un 4 (les codes de dossier commencent par un 4)
         if(preg_match('/^4/', $refElement['code']))
+        {
+            if($returnFalseIfEmpty == TRUE)
+            {
+                if($refElement['code'] == '4002')
+                    return FALSE;
+            }
             return TRUE;
+        }
         else
             return FALSE;
     }
@@ -810,7 +818,7 @@ function copyHandler($idElement, $idUser, $path, $options = array())
 
                     if(is_string($elementNameInDestination))
                     {
-                        $isElementAFolder = isFolder($element['idRefElement']);
+                        $isElementAFolder = isFolder($element['idRefElement'], TRUE);
 
                         if(!(is_array($isElementAFolder))) //pas d'erreur
                         {
@@ -1078,7 +1086,7 @@ function renameHandler($idElement, $idUser, $newName, $options = array())
                     }
                     //@todo rename sur le serveur de fichier et obtention du nouveau hash si l'élément est un dossier. Puis màj de ce hash
 
-                    $isFolder = isFolder($element['idRefElement']);
+                    $isFolder = isFolder($element['idRefElement'], TRUE);
 
                     if(!(is_array($isFolder))) //pas d'erreur
                     {
@@ -1260,7 +1268,7 @@ function moveHandler($idElement, $idUser, $path, $options = array())
 
                     if(is_string($elementNameInDestination))
                     {
-                        $isElementAFolder = isFolder($element['idRefElement']);
+                        $isElementAFolder = isFolder($element['idRefElement'], TRUE);
 
                         if(!(is_array($isElementAFolder))) //pas d'erreur
                         {
