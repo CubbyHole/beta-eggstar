@@ -34,6 +34,11 @@ function handleActions($request)
                 break;
             case 'download':
                 break;
+            case 'shareWithUser':
+                return shareWithUser($request['idElement'], $request['idUser'], $request['email'], $request['code']);
+                break;
+            case 'anonymousShare':
+                break;
         }
     }
     else return array('error' => 'Action parameter required, none found');

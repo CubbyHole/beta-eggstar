@@ -27,3 +27,4 @@ require_once '/Managers/RefRightManager.class.php';
 
 //require_once '/Utils/FileSystemManager.php';
 require_once '/Utils/ActionManager.php';
+require_once '/Utils/ShareManager.php';
