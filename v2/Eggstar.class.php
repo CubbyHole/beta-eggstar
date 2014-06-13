@@ -130,7 +130,15 @@ class Eggstar extends API
 
                     $elements = $elementManager->returnElementsDetails($idUser, $isOwner, $path, $elementName);
 
-                    return $elements;
+                    if(array_key_exists('error', $elements))
+                        /*
+                         * array de array pour faciliter l'exploitation du retour
+                         * (ne pas avoir dans un cas un array et dans l'autre un array d'array)
+                         * -- 13/06/2014
+                         */
+                        return array($elements);
+                    else
+                        return $elements;
                 }
                 else return array('error' => 'You cannot process another user\'s data');
             }
