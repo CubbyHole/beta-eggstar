@@ -458,9 +458,13 @@ function prepareCopyReturn($options, $operationSuccess, $error, $elementsImpacte
     $elementManager = new ElementManager();
     $return['operationSuccess'] = $operationSuccess;
 
-    if(is_array($error) && array_key_exists('error', $error))
-        $return['error'] = $error['error'];
-    else $return['error'] = $error;
+    if(!(empty($error)))
+    {
+        if(is_array($error) && array_key_exists('error', $error))
+            $return['error'] = $error['error'];
+        else
+            $return['error'] = $error;
+    }
 
     if(is_array($options))
     {
@@ -506,10 +510,13 @@ function prepareMoveReturn($options, $operationSuccess, $error, $elementsImpacte
     $elementManager = new ElementManager();
     $return['operationSuccess'] = $operationSuccess;
 
-    if(is_array($error) && array_key_exists('error', $error))
-        $return['error'] = $error['error'];
-    else
-        $return['error'] = $error;
+    if(!(empty($error)))
+    {
+        if(is_array($error) && array_key_exists('error', $error))
+            $return['error'] = $error['error'];
+        else
+            $return['error'] = $error;
+    }
 
     if(is_array($options))
     {
@@ -574,8 +581,20 @@ function disableHandler($idElement, $idUser, $returnImpactedElements = 'false')
 
                     if(!(array_key_exists('error', $refElement)))
                     {
-                        //si le code commence par un 4 (les codes de dossier commencent par un 4)
-                        if(preg_match('/^4/', $refElement['code']))
+                        //File Server -- 13/06/2014
+                        if(preg_match('/^4/', $refElement['code']) || preg_match('/^9/', $refElement['code'])) // dossier ou non reconnu, pas d'extension à rajouter
+                            $elementName = $element['name'];
+                        else
+                            $elementName = $element['name'].$refElement['extension'];
+
+                        $FSdisableResult = moveToTrash($idUser, $element['serverPath'], $elementName);
+
+                        if(!(is_bool($FSdisableResult)) || $FSdisableResult != TRUE)
+                            return $FSdisableResult;
+                        //-- Fin File Server
+
+                        //si le code commence par un 4 (les codes de dossier commencent par un 4) et n'est pas 4002 (dossier vide)
+                        if(preg_match('/^4/', $refElement['code']) && $refElement['code'] != '4002')
                         {
                             $serverPath = $element['serverPath'].$element['name'].'/';
 
@@ -799,23 +818,22 @@ function copyHandler($idElement, $idUser, $path, $options = array())
                          */
                             $destinationFolderName = implode(array_slice(explode('/', $path), -2, 1));
                             $elementCriteria['name'] = $destinationFolderName;
-                        }
 
-                        //récupération de l'id de l'élément en base correspondant au dossier de destination
-                        $idDestinationFolder = $elementManager->findOne($elementCriteria, array('_id' => TRUE));
+                            //récupération de l'id de l'élément en base correspondant au dossier de destination
+                            $idDestinationFolder = $elementManager->findOne($elementCriteria, array('_id' => TRUE));
 
-                        if((array_key_exists('error', $idDestinationFolder)))
-                            return prepareCopyReturn($options, $operationSuccess, $idDestinationFolder, $impactedElements, $pastedElements, $failedToPaste);
-                        else
-                        {
-                            //vérification des droits dans la destination
-                            $hasRightOnDestination = actionAllowed($idDestinationFolder['_id'], $idUser, array('11'));
+                            if((array_key_exists('error', $idDestinationFolder)))
+                                return prepareCopyReturn($options, $operationSuccess, $idDestinationFolder, $impactedElements, $pastedElements, $failedToPaste);
+                            else
+                            {
+                                //vérification des droits dans la destination
+                                $hasRightOnDestination = actionAllowed($idDestinationFolder['_id'], $idUser, array('11'));
 
-                            if(is_array($hasRightOnDestination) && array_key_exists('error', $hasRightOnDestination))
-                                return prepareCopyReturn($options, $operationSuccess, $hasRightOnDestination, $impactedElements, $pastedElements, $failedToPaste);
-                            elseif($hasRightOnDestination == FALSE)
-                                return prepareCopyReturn($options, $operationSuccess, array('error' => 'Access denied in destination'), $impactedElements, $pastedElements, $failedToPaste);
-
+                                if(is_array($hasRightOnDestination) && array_key_exists('error', $hasRightOnDestination))
+                                    return prepareCopyReturn($options, $operationSuccess, $hasRightOnDestination, $impactedElements, $pastedElements, $failedToPaste);
+                                elseif($hasRightOnDestination == FALSE)
+                                    return prepareCopyReturn($options, $operationSuccess, array('error' => 'Access denied in destination'), $impactedElements, $pastedElements, $failedToPaste);
+                            }
                         }
                     }
 
@@ -823,143 +841,161 @@ function copyHandler($idElement, $idUser, $path, $options = array())
 
                     if(is_string($elementNameInDestination))
                     {
-                        $isElementAFolder = isFolder($element['idRefElement'], TRUE);
+                        //File Server -- 13/06/2014
+                        $refElementManager = new RefElementManager();
+                        $refElementFieldsToReturn = array('code' => TRUE, 'extension' => TRUE);
+                        $refElement = $refElementManager->findById($element['idRefElement'], $refElementFieldsToReturn);
 
-                        if(!(is_array($isElementAFolder))) //pas d'erreur
+                        if(array_key_exists('error', $refElement))
+                            return $refElement;
+
+                        //dossier ou non reconnu, pas d'extension à rajouter
+                        if(preg_match('/^4/', $refElement['code']) || preg_match('/^9/', $refElement['code']))
                         {
-                            //récupérer la valeur de storage de l'utilisateur
-                            $accountManager = new AccountManager();
+                            $completeSourceName = $element['name'];
+                            $completeDestinationName = $elementNameInDestination;
+                        }
+                        else
+                        {
+                            $completeSourceName = $element['name'].$refElement['extension'];
+                            $completeDestinationName = $elementNameInDestination.$refElement['extension'];
+                        }
 
-                            $accountCriteria = array(
+                        $FSCopyResult = copyFSElement($idUser, $element['serverPath'], $completeSourceName, $path, $completeDestinationName );
+
+                        if(!(is_bool($FSCopyResult)) || $FSCopyResult != TRUE)
+                            return $FSCopyResult;
+                        //Fin File Server
+
+                        //récupérer la valeur de storage de l'utilisateur
+                        $accountManager = new AccountManager();
+
+                        $accountCriteria = array(
+                            'state' => (int)1,
+                            'idUser' => $idUser
+                        );
+
+                        $fieldsToReturn = array(
+                            'storage' => TRUE,
+                            'idRefPlan' => TRUE
+                        );
+
+                        $account = $accountManager->findOne($accountCriteria, $fieldsToReturn);
+
+                        if(!(array_key_exists('error', $account)))
+                        {
+                            $currentUserStorage = $account['storage'];
+
+                            //récupérer le stockage maximum autorisé par le plan de l'utilisateur
+                            $refPlanManager = new RefPlanManager();
+
+                            $refPlan = $refPlanManager->findById($account['idRefPlan'], array('maxStorage' => TRUE));
+
+                            if(!(array_key_exists('error', $refPlan)))
+                                $maxStorageAllowed = $refPlan['maxStorage'];
+                            else
+                                return prepareCopyReturn($options, $operationSuccess, $refPlan, $impactedElements, $pastedElements, $failedToPaste);
+                        }
+                        else return prepareCopyReturn($options, $operationSuccess, $account, $impactedElements, $pastedElements, $failedToPaste);
+
+                        if($refElement['code'] != '4002' && preg_match('/^4/', $refElement['code'])) //l'élément est un dossier non vide
+                        {
+                            $serverPath = $element['serverPath'].$element['name'].'/';
+
+                            //récupération des éléments contenus dans le dossier
+                            $seekElementsInFolder = array(
                                 'state' => (int)1,
-                                'idUser' => $idUser
+                                'serverPath' => new MongoRegex("/^$serverPath/i"),
+                                'idOwner' => $idUser
                             );
 
-                            $fieldsToReturn = array(
-                                'storage' => TRUE,
-                                'idRefPlan' => TRUE
-                            );
+                            $elementsInFolder = $elementManager->find($seekElementsInFolder);
+                        }
 
-                            $account = $accountManager->findOne($accountCriteria, $fieldsToReturn);
+                        if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
+                            $impactedElements = $elementsInFolder;
 
-                            if(!(array_key_exists('error', $account)))
+                        $impactedElements[] = $element;
+
+                        $totalSize = sumSize($impactedElements); //calcul de la taille du contenu
+
+                        if($currentUserStorage + $totalSize <= $maxStorageAllowed) //copie autorisée
+                        {
+                            $count = 0;
+
+                            foreach($impactedElements as $key => $impactedElement)
                             {
-                                $currentUserStorage = $account['storage'];
+                                //préparation de la copie
+                                $elementCopy = $impactedElement;
+                                $elementCopy['_id'] = new MongoId();
 
-                                //récupérer le stockage maximum autorisé par le plan de l'utilisateur
-                                $refPlanManager = new RefPlanManager();
-
-                                $refPlan = $refPlanManager->findById($account['idRefPlan'], array('maxStorage' => TRUE));
-
-                                if(!(array_key_exists('error', $refPlan)))
-                                    $maxStorageAllowed = $refPlan['maxStorage'];
-                                else
-                                    return prepareCopyReturn($options, $operationSuccess, $refPlan, $impactedElements, $pastedElements, $failedToPaste);
-                            }
-                            else return prepareCopyReturn($options, $operationSuccess, $account, $impactedElements, $pastedElements, $failedToPaste);
-
-                            if($isElementAFolder == TRUE) //l'élément est un dossier
-                            {
-                                $serverPath = $element['serverPath'].$element['name'].'/';
-
-                                //récupération des éléments contenus dans le dossier
-                                $seekElementsInFolder = array(
-                                    'state' => (int)1,
-                                    'serverPath' => new MongoRegex("/^$serverPath/i"),
-                                    'idOwner' => $idUser
-                                );
-
-                                $elementsInFolder = $elementManager->find($seekElementsInFolder);
-                            }
-
-                            if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
-                                $impactedElements = $elementsInFolder;
-
-                            $impactedElements[] = $element;
-
-                            $totalSize = sumSize($impactedElements); //calcul de la taille du contenu
-
-                            if($currentUserStorage + $totalSize <= $maxStorageAllowed) //copie autorisée
-                            {
-                                $count = 0;
-
-                                foreach($impactedElements as $key => $impactedElement)
+                                if(count($impactedElements) != $key+1)
                                 {
-                                    //préparation de la copie
-                                    $elementCopy = $impactedElement;
-                                    $elementCopy['_id'] = new MongoId();
+                                    $explode = explode($serverPath, $elementCopy['serverPath']);
 
-                                    if(count($impactedElements) != $key+1)
+                                    if(isset($explode[1]) && $explode[1] != '')
                                     {
-                                        $explode = explode($serverPath, $elementCopy['serverPath']);
-
-                                        if(isset($explode[1]) && $explode[1] != '')
-                                        {
-                                            $elementPath = $path.$elementNameInDestination.'/'.$explode[1];
-                                            $elementCopy['serverPath'] = $elementPath;
-                                        }
-                                        else
-                                            $elementCopy['serverPath'] = $path.$elementNameInDestination.'/';
+                                        $elementPath = $path.$elementNameInDestination.'/'.$explode[1];
+                                        $elementCopy['serverPath'] = $elementPath;
                                     }
                                     else
-                                    {
-                                        $elementCopy['name'] = $elementNameInDestination;
-                                        $elementCopy['serverPath'] = $path;
-                                    }
-
-                                    $elementCopy['downloadLink'] = '';
-
-                                    //insertion de la copie
-                                    $copyResult = $elementManager->create($elementCopy);
-
-                                    //gestion des erreurs
-                                    if(!(is_bool($copyResult))) //erreur
-                                    {
-                                        $failedToPaste[$count]['elementToCopy'] = $impactedElement;
-                                        $failedToPaste[$count]['elementCopy'] = $elementCopy;
-                                        $failedToPaste[$count]['error'] = $copyResult['error'];
-                                        $count++;
-                                    }
-                                    elseif($copyResult == TRUE)
-                                        $pastedElements[] = $elementCopy;
+                                        $elementCopy['serverPath'] = $path.$elementNameInDestination.'/';
                                 }
-
-                                if($totalSize > 0)
+                                else
                                 {
-                                    $updateCriteria = array(
-                                        '_id' => new MongoId($account['_id']),
-                                        'state' => (int)1
-                                    );
-                                    $storageUpdate = array('$inc' => array('storage' => $totalSize));
-                                    $accountUpdate = $accountManager->update($updateCriteria, $storageUpdate);
-
-                                    if(is_array($accountUpdate) && array_key_exists('error', $accountUpdate))
-                                    {
-                                        $errorMessage = 'Error when trying to add '.$totalSize.' to user account';
-                                        return prepareCopyReturn($options, $operationSuccess, $errorMessage, $impactedElements, $pastedElements, $failedToPaste);
-                                    }
+                                    $elementCopy['name'] = $elementNameInDestination;
+                                    $elementCopy['serverPath'] = $path;
                                 }
 
-                                // Lors de copie dans un dossier, on vérifie si le dossier était empty. Au quel cas on le passe à NotEmpty
-                                updateFolderStatus($path, $idUser);
+                                $elementCopy['downloadLink'] = '';
 
-                                if(array_key_exists('keepRights', $options) && $options['keepRights'] == 'TRUE')
-                                    copyRights($impactedElements, $pastedElements);
+                                //insertion de la copie
+                                $copyResult = $elementManager->create($elementCopy);
 
-                                //@todo copie sur le serveur de fichier
-
-                                $operationSuccess = TRUE;
-
-                                return prepareCopyReturn($options, $operationSuccess, array(), $impactedElements, $pastedElements, $failedToPaste);
-
-                            } //pas assez d'espace
-                            else
-                            {
-                                $errorMessage = 'Not enough space available for your account to proceed action';
-                                return prepareCopyReturn($options, $operationSuccess, $errorMessage, $impactedElements, $pastedElements, $failedToPaste);
+                                //gestion des erreurs
+                                if(!(is_bool($copyResult))) //erreur
+                                {
+                                    $failedToPaste[$count]['elementToCopy'] = $impactedElement;
+                                    $failedToPaste[$count]['elementCopy'] = $elementCopy;
+                                    $failedToPaste[$count]['error'] = $copyResult['error'];
+                                    $count++;
+                                }
+                                elseif($copyResult == TRUE)
+                                    $pastedElements[] = $elementCopy;
                             }
+
+                            if($totalSize > 0)
+                            {
+                                $updateCriteria = array(
+                                    '_id' => new MongoId($account['_id']),
+                                    'state' => (int)1
+                                );
+                                $storageUpdate = array('$inc' => array('storage' => $totalSize));
+                                $accountUpdate = $accountManager->update($updateCriteria, $storageUpdate);
+
+                                if(is_array($accountUpdate) && array_key_exists('error', $accountUpdate))
+                                {
+                                    $errorMessage = 'Error when trying to add '.$totalSize.' to user account';
+                                    return prepareCopyReturn($options, $operationSuccess, $errorMessage, $impactedElements, $pastedElements, $failedToPaste);
+                                }
+                            }
+
+                            // Lors de copie dans un dossier, on vérifie si le dossier était empty. Au quel cas on le passe à NotEmpty
+                            updateFolderStatus($path, $idUser);
+
+                            if(array_key_exists('keepRights', $options) && $options['keepRights'] == 'TRUE')
+                                copyRights($impactedElements, $pastedElements);
+
+                            $operationSuccess = TRUE;
+
+                            return prepareCopyReturn($options, $operationSuccess, array(), $impactedElements, $pastedElements, $failedToPaste);
+
+                        } //pas assez d'espace
+                        else
+                        {
+                            $errorMessage = 'Not enough space available for your account to proceed action';
+                            return prepareCopyReturn($options, $operationSuccess, $errorMessage, $impactedElements, $pastedElements, $failedToPaste);
                         }
-                        else return prepareCopyReturn($options, $operationSuccess, $isElementAFolder, $impactedElements, $pastedElements, $failedToPaste);
                     }
                     else return prepareCopyReturn($options, $operationSuccess, $elementNameInDestination, $impactedElements, $pastedElements, $failedToPaste);
                 }
@@ -992,10 +1028,13 @@ function prepareRenameReturn($options, $operationSuccess, $error, $elementsImpac
     $elementManager = new ElementManager();
     $return['operationSuccess'] = $operationSuccess;
 
-    if(is_array($error) && array_key_exists('error', $error))
-        $return['error'] = $error['error'];
-    else
-        $return['error'] = $error;
+    if(!(empty($error)))
+    {
+        if(is_array($error) && array_key_exists('error', $error))
+            $return['error'] = $error['error'];
+        else
+            $return['error'] = $error;
+    }
 
     if(is_array($options))
     {
@@ -1089,74 +1128,92 @@ function renameHandler($idElement, $idUser, $newName, $options = array())
                         if($elementsWithSameName['error'] != 'No match found.')
                             return $elementsWithSameName;
                     }
-                    //@todo rename sur le serveur de fichier et obtention du nouveau hash si l'élément est un dossier. Puis màj de ce hash
+                    else
+                        return array('error' => 'There is already an element with this name.');
 
-                    $isFolder = isFolder($element['idRefElement'], TRUE);
+                    //File Server -- 13/06/2014
+                    $refElementManager = new RefElementManager();
+                    $refElementFieldsToReturn = array('code' => TRUE, 'extension' => TRUE);
+                    $refElement = $refElementManager->findById($element['idRefElement'], $refElementFieldsToReturn);
 
-                    if(!(is_array($isFolder))) //pas d'erreur
+                    if(array_key_exists('error', $refElement))
+                        return $refElement;
+
+                    if(preg_match('/^4/', $refElement['code']) || preg_match('/^9/', $refElement['code'])) // dossier ou non reconnu, pas d'extension à rajouter
                     {
-                        if($isFolder == TRUE) //l'élément est un dossier
-                        {
-                            $serverPath = $element['serverPath'].$element['name'].'/';
-
-                            //récupération des éléments contenus dans le dossier
-                            $seekElementsInFolder = array(
-                                'state' => (int)1,
-                                'serverPath' => new MongoRegex("/^$serverPath/i"),
-                                'idOwner' => $idUser
-                            );
-
-                            $elementsInFolder = $elementManager->find($seekElementsInFolder);
-                        }
-
-
-                        if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
-                            $impactedElements = $elementsInFolder;
-
-
-                        $impactedElements[] = $element;
-
-                        $count = 0;
-
-                        foreach($impactedElements as $key => $impactedElement)
-                        {
-                            $updateCriteria = array(
-                                '_id' => $impactedElement['_id'],
-                                'state' => (int)1
-                            );
-                            //préparation de la copie
-                            $elementCopy = $impactedElement;
-
-                            if(count($impactedElements) != $key+1)
-                            {
-                                $impactedElementPath = $impactedElement['serverPath'];
-                                $newPath = preg_replace('/'.$element['name'].'/i', $newName, $impactedElementPath);
-                                $elementCopy['serverPath'] = $newPath;
-                            }
-                            else
-                                $elementCopy['name'] = $newName;
-
-                            //mise à jour
-                            $updateResult = $elementManager->update($updateCriteria, $elementCopy);
-
-                            //gestion des erreurs
-
-                            if(!(is_bool($updateResult))) //erreur
-                            {
-                                $failedToUpdate[$count]['elementToUpdate'] = $impactedElement;
-                                $failedToUpdate[$count]['elementUpdated'] = $elementCopy;
-                                $failedToUpdate[$count]['error'] = $updateResult['error'];
-                                $count++;
-                            }
-                            elseif($updateResult == TRUE)
-                                $updatedElements[] = $elementCopy;
-                        }
-
-                        $operationSuccess = TRUE;
-
-                        return prepareRenameReturn($options, $operationSuccess, array(), $impactedElements, $updatedElements, $failedToUpdate);
+                        $oldCompleteName = $element['name'];
+                        $newCompleteName = $newName;
                     }
-                    else return prepareRenameReturn($options, $operationSuccess, $isFolder, $impactedElements, $updatedElements, $failedToUpdate);
+                    else
+                    {
+                        $oldCompleteName = $element['name'].$refElement['extension'];
+                        $newCompleteName = $newName.$refElement['extension'];
+                    }
+
+                    $FSRenameResult = renameFSElement($idUser, $element['serverPath'], $oldCompleteName, $newCompleteName);
+
+                    if(!(is_bool($FSRenameResult)) || $FSRenameResult != TRUE)
+                        return $FSRenameResult;
+                    //Fin File Server
+
+                    if($refElement['code'] != '4002' && (preg_match('/^4/', $refElement['code']))) //pas un dossier vide
+                    {
+                        $serverPath = $element['serverPath'].$element['name'].'/';
+
+                        //récupération des éléments contenus dans le dossier
+                        $seekElementsInFolder = array(
+                            'state' => (int)1,
+                            'serverPath' => new MongoRegex("/^$serverPath/i"),
+                            'idOwner' => $idUser
+                        );
+
+                        $elementsInFolder = $elementManager->find($seekElementsInFolder);
+                    }
+
+                    if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
+                        $impactedElements = $elementsInFolder;
+
+                    $impactedElements[] = $element;
+
+                    $count = 0;
+
+                    foreach($impactedElements as $key => $impactedElement)
+                    {
+                        $updateCriteria = array(
+                            '_id' => $impactedElement['_id'],
+                            'state' => (int)1
+                        );
+                        //préparation de la copie
+                        $elementCopy = $impactedElement;
+
+                        if(count($impactedElements) != $key+1)
+                        {
+                            $impactedElementPath = $impactedElement['serverPath'];
+                            $newPath = preg_replace('/'.$element['name'].'/i', $newName, $impactedElementPath);
+                            $elementCopy['serverPath'] = $newPath;
+                        }
+                        else
+                            $elementCopy['name'] = $newName;
+
+                        //mise à jour
+                        $updateResult = $elementManager->update($updateCriteria, $elementCopy);
+
+                        //gestion des erreurs
+
+                        if(!(is_bool($updateResult))) //erreur
+                        {
+                            $failedToUpdate[$count]['elementToUpdate'] = $impactedElement;
+                            $failedToUpdate[$count]['elementUpdated'] = $elementCopy;
+                            $failedToUpdate[$count]['error'] = $updateResult['error'];
+                            $count++;
+                        }
+                        elseif($updateResult == TRUE)
+                            $updatedElements[] = $elementCopy;
+                    }
+
+                    $operationSuccess = TRUE;
+
+                    return prepareRenameReturn($options, $operationSuccess, array(), $impactedElements, $updatedElements, $failedToUpdate);
                 }
                 else return prepareRenameReturn($options, $operationSuccess, array('error' => 'Element inactivated, nothing to do'), $impactedElements, $updatedElements, $failedToUpdate);
             }
@@ -1250,22 +1307,22 @@ function moveHandler($idElement, $idUser, $path, $options = array())
                             */
                             $destinationFolderName = implode(array_slice(explode('/', $path), -2, 1));
                             $elementCriteria['name'] = $destinationFolderName;
-                        }
 
-                        //récupération de l'id de l'élément en base correspondant au dossier de destination
-                        $idDestinationFolder = $elementManager->findOne($elementCriteria, array('_id' => TRUE));
+                            //récupération de l'id de l'élément en base correspondant au dossier de destination
+                            $idDestinationFolder = $elementManager->findOne($elementCriteria, array('_id' => TRUE));
 
-                        if((array_key_exists('error', $idDestinationFolder)))
-                            return prepareMoveReturn($options, $operationSuccess, $idDestinationFolder, $impactedElements, $movedElements, $failedToMove);
-                        else
-                        {
-                            //vérification des droits dans la destination
-                            $hasRightOnDestination = actionAllowed($idDestinationFolder['_id'], $idUser, array('11'));
+                            if((array_key_exists('error', $idDestinationFolder)))
+                                return prepareMoveReturn($options, $operationSuccess, $idDestinationFolder, $impactedElements, $movedElements, $failedToMove);
+                            else
+                            {
+                                //vérification des droits dans la destination
+                                $hasRightOnDestination = actionAllowed($idDestinationFolder['_id'], $idUser, array('11'));
 
-                            if(is_array($hasRightOnDestination) && array_key_exists('error', $hasRightOnDestination))
-                                return prepareMoveReturn($options, $operationSuccess, $hasRightOnDestination, $impactedElements, $movedElements, $failedToMove);
-                            elseif($hasRightOnDestination == FALSE)
-                                return prepareMoveReturn($options, $operationSuccess, array('error' => 'Access denied in destination'), $impactedElements, $movedElements, $failedToMove);
+                                if(is_array($hasRightOnDestination) && array_key_exists('error', $hasRightOnDestination))
+                                    return prepareMoveReturn($options, $operationSuccess, $hasRightOnDestination, $impactedElements, $movedElements, $failedToMove);
+                                elseif($hasRightOnDestination == FALSE)
+                                    return prepareMoveReturn($options, $operationSuccess, array('error' => 'Access denied in destination'), $impactedElements, $movedElements, $failedToMove);
+                            }
                         }
                     }
 
@@ -1273,94 +1330,113 @@ function moveHandler($idElement, $idUser, $path, $options = array())
 
                     if(is_string($elementNameInDestination))
                     {
-                        $isElementAFolder = isFolder($element['idRefElement'], TRUE);
+                        //File Server 14/06/2014
+                        $refElementManager = new RefElementManager();
+                        $refElementFieldsToReturn = array('code' => TRUE, 'extension' => TRUE);
+                        $refElement = $refElementManager->findById($element['idRefElement'], $refElementFieldsToReturn);
 
-                        if(!(is_array($isElementAFolder))) //pas d'erreur
+                        if(array_key_exists('error', $refElement))
+                            return $refElement;
+
+                        //dossier ou non reconnu, pas d'extension à rajouter
+                        if(preg_match('/^4/', $refElement['code']) || preg_match('/^9/', $refElement['code']))
                         {
-                            if($isElementAFolder == TRUE) //l'élément est un dossier
+                            $completeSourceName = $element['name'];
+                            $completeDestinationName = $elementNameInDestination;
+                        }
+                        else
+                        {
+                            $completeSourceName = $element['name'].$refElement['extension'];
+                            $completeDestinationName = $elementNameInDestination.$refElement['extension'];
+                        }
+
+                        $FSMoveResult = moveFSElement($idUser, $element['serverPath'], $completeSourceName, $path, $completeDestinationName);
+
+                        if(!(is_bool($FSMoveResult)) || $FSMoveResult != TRUE)
+                            return $FSMoveResult;
+                        //Fin File Server
+
+                        if($refElement['code'] != '4002' && preg_match('/^4/', $refElement['code'])) //l'élément est un dossier non vide
+                        {
+                            $serverPath = $element['serverPath'].$element['name'].'/';
+
+                            //récupération des éléments contenus dans le dossier
+                            $seekElementsInFolder = array(
+                                'state' => (int)1,
+                                'serverPath' => new MongoRegex("/^$serverPath/i"),
+                                'idOwner' => $idUser
+                            );
+
+                            $elementsInFolder = $elementManager->find($seekElementsInFolder);
+                        }
+
+
+                        if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
+                            $impactedElements = $elementsInFolder;
+
+
+                        $impactedElements[] = $element;
+
+                        $count = 0;
+
+                        foreach($impactedElements as $key => $impactedElement)
+                        {
+                            $updateCriteria = array(
+                                '_id' => $impactedElement['_id'],
+                                'state' => (int)1
+                            );
+                            //préparation de la copie
+                            $elementCopy = $impactedElement;
+
+                            if(count($impactedElements) != $key+1)
                             {
-                                $serverPath = $element['serverPath'].$element['name'].'/';
-
-                                //récupération des éléments contenus dans le dossier
-                                $seekElementsInFolder = array(
-                                    'state' => (int)1,
-                                    'serverPath' => new MongoRegex("/^$serverPath/i"),
-                                    'idOwner' => $idUser
-                                );
-
-                                $elementsInFolder = $elementManager->find($seekElementsInFolder);
-                            }
-
-
-                            if(isset($elementsInFolder) && !(array_key_exists('error', $elementsInFolder)))
-                                $impactedElements = $elementsInFolder;
-
-
-                            $impactedElements[] = $element;
-
-                            $count = 0;
-
-                            foreach($impactedElements as $key => $impactedElement)
-                            {
-                                $updateCriteria = array(
-                                    '_id' => $impactedElement['_id'],
-                                    'state' => (int)1
-                                );
-                                //préparation de la copie
-                                $elementCopy = $impactedElement;
-
-                                if(count($impactedElements) != $key+1)
+                                $explode = explode($serverPath, $elementCopy['serverPath']);
+                                if(isset($explode[1]) && $explode[1] != '')
                                 {
-                                    $explode = explode($serverPath, $elementCopy['serverPath']);
-                                    if(isset($explode[1]) && $explode[1] != '')
-                                    {
-                                        $elementPath = $path.$elementNameInDestination.'/'.$explode[1];
-                                        $elementCopy['serverPath'] = $elementPath;
-                                    }
-                                    else
-                                        $elementCopy['serverPath'] = $path.$elementNameInDestination.'/';
+                                    $elementPath = $path.$elementNameInDestination.'/'.$explode[1];
+                                    $elementCopy['serverPath'] = $elementPath;
                                 }
                                 else
-                                {
-                                    $elementCopy['name'] = $elementNameInDestination;
-                                    $elementCopy['serverPath'] = $path;
-                                }
-
-                                if(array_key_exists('keepDownloadLinks', $options) && $options['keepDownloadLinks'] == 'FALSE')
-                                    $elementCopy['downloadLink'] = '';
-
-                                //mise à jour
-                                $updateResult = $elementManager->update($updateCriteria, $elementCopy);
-
-                                //gestion des erreurs
-
-                                if(!(is_bool($updateResult))) //erreur
-                                {
-                                    $failedToPaste[$count]['elementToMove'] = $impactedElement;
-                                    $failedToPaste[$count]['elementMoved'] = $elementCopy;
-                                    $failedToPaste[$count]['error'] = $updateResult['error'];
-                                    $count++;
-                                }
-                                elseif($updateResult == TRUE)
-                                    $movedElements[] = $elementCopy;
+                                    $elementCopy['serverPath'] = $path.$elementNameInDestination.'/';
+                            }
+                            else
+                            {
+                                $elementCopy['name'] = $elementNameInDestination;
+                                $elementCopy['serverPath'] = $path;
                             }
 
-                            /*
-                             * Si le déplacement vide un dossier ou rempli un dossier qui était vide,
-                             * on met à jour son refElement
-                             */
-                            updateFolderStatus($path, $idUser);
+                            if(array_key_exists('keepDownloadLinks', $options) && $options['keepDownloadLinks'] == 'FALSE')
+                                $elementCopy['downloadLink'] = '';
 
-                            if(array_key_exists('keepRights', $options) && $options['keepRights'] == 'FALSE')
-                                disableRights($impactedElements);
+                            //mise à jour
+                            $updateResult = $elementManager->update($updateCriteria, $elementCopy);
 
-                            //@todo déplacement sur le serveur de fichier
+                            //gestion des erreurs
 
-                            $operationSuccess = TRUE;
-
-                            return prepareMoveReturn($options, $operationSuccess, array(), $impactedElements, $movedElements, $failedToMove);
+                            if(!(is_bool($updateResult))) //erreur
+                            {
+                                $failedToPaste[$count]['elementToMove'] = $impactedElement;
+                                $failedToPaste[$count]['elementMoved'] = $elementCopy;
+                                $failedToPaste[$count]['error'] = $updateResult['error'];
+                                $count++;
+                            }
+                            elseif($updateResult == TRUE)
+                                $movedElements[] = $elementCopy;
                         }
-                        else return prepareMoveReturn($options, $operationSuccess, $isElementAFolder, $impactedElements, $movedElements, $failedToMove);
+
+                        /*
+                         * Si le déplacement vide un dossier ou rempli un dossier qui était vide,
+                         * on met à jour son refElement
+                         */
+                        updateFolderStatus($path, $idUser);
+                        updateFolderStatus($element['serverPath'], $idUser);
+
+                        if(array_key_exists('keepRights', $options) && $options['keepRights'] == 'FALSE')
+                            disableRights($impactedElements);
+
+                        $operationSuccess = TRUE;
+
+                        return prepareMoveReturn($options, $operationSuccess, array(), $impactedElements, $movedElements, $failedToMove);
                     }
                     else return prepareMoveReturn($options, $operationSuccess, $elementNameInDestination, $impactedElements, $movedElements, $failedToMove);
                 }
@@ -1460,6 +1536,13 @@ function createNewFolder($idUser, $path, $folderName, $inheritRightsFromParent)
             return array('error' => 'Folder name not available.');
     }
 
+    //File Server - 13/06/2014
+    $mkdirResult = createFSDirectory($idUser, $path, $folderName);
+
+    if(!(is_bool($mkdirResult)) || !($mkdirResult == TRUE))
+        return $mkdirResult;
+    //Fin File Server
+
     //Récupération de l'id de RefElement dossier vide
     $refElementManager = new RefElementManager();
     $emptyFolder = $refElementManager->findOne(array('state' => 1, 'code' => '4002'), array('_id' => TRUE));
@@ -1483,6 +1566,9 @@ function createNewFolder($idUser, $path, $folderName, $inheritRightsFromParent)
             {
                 if($parentElement['idRefElement'] == $emptyFolder['_id'])
                 {
+                    $parentElementCriteria = array(
+                        '_id' => $parentElement->getId()
+                    );
                     //on change l'id du dossier parent pour dossier non vide
                     $notEmptyFolder = $refElementManager->findOne(array('state' => 1, 'code' => '4003'), array('_id' => TRUE));
                     $update = array(
@@ -1492,7 +1578,8 @@ function createNewFolder($idUser, $path, $folderName, $inheritRightsFromParent)
                     );
 
                     //dans le cas où on voudrait récupérer le dossier parent mis à jour, on peut utiliser $updatedFolder
-                    $updatedFolder = $elementManager->findAndModify($newFolder, $update, array('new' => TRUE));
+                    $updatedFolder = $elementManager->findAndModify($parentElementCriteria, $update, array('new' => TRUE));
+
                     if(!(array_key_exists('error', $updatedFolder)))
                         $operationSuccess = TRUE;
                 }
