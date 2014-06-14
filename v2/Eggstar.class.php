@@ -94,7 +94,7 @@ class Eggstar extends API
                 return $user;
             }
         }
-        return 0;
+        return array('returnResponse' => 0);
     }
 
     protected function elements()
@@ -169,7 +169,7 @@ class Eggstar extends API
 
             return handleActions($this->request);
         }
-        return 0;
+        return array('returnResponse' => 0);
     }
 
     protected function rights()
@@ -185,6 +185,6 @@ class Eggstar extends API
             else
                 return $shares;
         }
-        return 0;
+        return array('returnResponse' => 0);
     }
 } 
