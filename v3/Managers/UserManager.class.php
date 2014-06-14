@@ -7,7 +7,7 @@
  */
 
 /** @var string $projectRoot chemin du projet dans le système de fichier */
-$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v2';
+$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v3';
 
 require_once $projectRoot.'/Managers/AbstractManager.class.php';
 require_once $projectRoot.'/Managers/AccountManager.class.php';

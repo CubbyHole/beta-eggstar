@@ -6,7 +6,7 @@
  * Time: 14:07
  */
 
-$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v2';
+$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v3';
 require_once $projectRoot.'/required.php';
 
 function handleActions($request)

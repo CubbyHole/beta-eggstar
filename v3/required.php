@@ -6,7 +6,7 @@
  * Time: 18:57
  */
 
-$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v2';
+$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v3';
 
 require_once '/Interfaces/AccountManager.interface.php';
 require_once '/Interfaces/RefPlanManager.interface.php';
@@ -25,6 +25,6 @@ require_once '/Managers/RefElementManager.class.php';
 require_once '/Managers/RightManager.class.php';
 require_once '/Managers/RefRightManager.class.php';
 
-//require_once '/Utils/FileSystemManager.php';
+require_once '/Utils/FileSystemManager.php';
 require_once '/Utils/ActionManager.php';
 require_once '/Utils/ShareManager.php';

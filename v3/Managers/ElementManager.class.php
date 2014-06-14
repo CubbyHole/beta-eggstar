@@ -7,7 +7,7 @@
  */
 
 /** @var string $projectRoot chemin du projet dans le système de fichier */
-$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v2';
+$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v3';
 
 require_once $projectRoot.'/required.php';
 
@@ -317,6 +317,7 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
                         $elements[$key] = $element;
                     }
                     else unset($elements[$key]);
+
                 }
 
                 if(empty($elements))

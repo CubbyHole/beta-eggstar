@@ -125,9 +125,10 @@ interface RightManagerInterface
      * @param MongoId|string $idUser
      * @param MongoId|string $idElement
      * @param string $refRightCode
+     * @param string $returnRights
      * @since 15/05/2014
      * @return bool
      */
 
-    function hasRightOnElement($idUser, $idElement, $refRightCode);
+    function hasRightOnElement($idUser, $idElement, $refRightCode, $returnRights = 'FALSE');
 }

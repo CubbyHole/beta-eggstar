@@ -3,27 +3,27 @@
  * Created by PhpStorm.
  * User: Crocell
  * Date: 25/04/14
- * Time: 15:09
+ * Time: 15:18
  */
 
 /** @var string $projectRoot chemin du projet dans le système de fichier */
-$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v2';
+$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v3';
 
 require_once $projectRoot.'/required.php';
 
 /**
- * Class RightManager
+ * Class RefRightManager
  * @author Alban Truc
  */
-class RightManager extends AbstractManager implements RightManagerInterface{
+class RefRightManager extends AbstractManager implements RefRightManagerInterface{
 
-    /** @var MongoCollection $rightCollection collection right */
-    protected $rightCollection;
+    /** @var MongoCollection $refRightCollection collection refRight */
+    protected $refRightCollection;
 
     /**
      * Constructeur:
      * - Appelle le constructeur de {@see AbstractManager::__construct} (gestion des accès de la BDD).
-     * - Initialise la collection right.
+     * - Initialise la collection refRight.
      * @author Alban Truc
      * @since 01/2014
      */
@@ -31,67 +31,49 @@ class RightManager extends AbstractManager implements RightManagerInterface{
     public function __construct()
     {
         parent::__construct();
-        $this->rightCollection = $this->getCollection('right');
+        $this->refRightCollection = $this->getCollection('refright');
     }
 
     /**
      * Modifications de certaines données
      * @author Alban Truc
-     * @param array $right
+     * @param array $refRight
      * @since 30/04/2014
      * @return array
      */
 
-    public function convert($right)
+    public function convert($refRight)
     {
-        if(is_array($right))
+        if(is_array($refRight))
         {
-            if(isset($right['_id']))
-                $right['_id'] = (string)$right['_id']; // MongoId => string
-
-            if(isset($right['idUser']))
-                $right['idUser'] = (string)$right['idUser']; // MongoId => string
-
-            if(isset($right['idElement']))
-                $right['idElement'] = (string)$right['idElement']; // MongoId => string
-
-            if(isset($right['idRefRight']))
-                $right['idRefRight'] = (string)$right['idRefRight']; // MongoId => string
+            if(isset($refRight['_id']))
+                $refRight['_id'] = (string)$refRight['_id']; // MongoId => string
         }
 
-        return $right;
+        return $refRight;
     }
 
     /**
      * Conversion inverse de celle de la fonction ci-dessus
      * @author Alban Truc
-     * @param array $right
+     * @param array $refRight
      * @since 08/06/2014
      * @return array
      */
 
-    public function reverseConvert($right)
+    public function reverseConvert($refRight)
     {
-        if(is_array($right))
+        if(is_array($refRight))
         {
-            if(isset($right['_id']))
-                $right['_id'] = new MongoId($right['_id']); // string => MongoId
-
-            if(isset($right['idUser']))
-                $right['idUser'] = new MongoId($right['idUser']); // string => MongoId
-
-            if(isset($right['idElement']))
-                $right['idElement'] = new MongoId($right['idElement']); // string => MongoId
-
-            if(isset($right['idRefRight']))
-                $right['idRefRight'] = new MongoId($right['idRefRight']); // string => MongoId
+            if(isset($refRight['_id']))
+                $refRight['_id'] = new MongoId($refRight['_id']); // string => MongoId
         }
 
-        return $right;
+        return $refRight;
     }
 
     /**
-     * Retrouver un droit selon des critères donnés
+     * Retrouver un refRight selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
      * @param array $fieldsToReturn champs à récupérer
@@ -103,28 +85,28 @@ class RightManager extends AbstractManager implements RightManagerInterface{
     {
         $criteria = self::reverseConvert($criteria);
 
-        $cursor = parent::__find('right', $criteria, $fieldsToReturn);
+        $cursor = parent::__find('refright', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
         {
-            $rights = array();
+            $refRights = array();
 
-            foreach($cursor as $right)
+            foreach($cursor as $refRight)
             {
-                $right = self::convert($right);
-                $rights[] = $right;
+                $refRight = self::convert($refRight);
+                $refRights[] = $refRight;
             }
 
-            if(empty($rights))
+            if(empty($refRights))
                 return array('error' => 'No match found.');
             else
-                return $rights;
+                return $refRights;
         }
         else return $cursor; //message d'erreur
     }
 
     /**
-     * Retourne le premier droit correspondant au(x) critère(s) donné(s)
+     * Retourne le premier refRight correspondant au(x) critère(s) donné(s)
      * @author Alban Truc
      * @param array $criteria critère(s) de recherche
      * @param array $fieldsToReturn champs à retourner
@@ -136,17 +118,17 @@ class RightManager extends AbstractManager implements RightManagerInterface{
     {
         $criteria = self::reverseConvert($criteria);
 
-        $result = parent::__findOne('right', $criteria, $fieldsToReturn);
+        $result = parent::__findOne('refright', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
         return $result;
     }
 
     /**
-     * - Retrouver un droit par son ID.
+     * - Retrouver un refRight par son ID.
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
-     * @param string|MongoId $id Identifiant unique du droit à trouver
+     * @param string|MongoId $id Identifiant unique de l'refRight à trouver
      * @param array $fieldsToReturn champs à retourner
      * @since 02/2014
      * @return array contenant le message d'erreur
@@ -154,45 +136,45 @@ class RightManager extends AbstractManager implements RightManagerInterface{
 
     public function findById($id, $fieldsToReturn = array())
     {
-        $result = parent::__findOne('right', array('_id' => new MongoId($id)), $fieldsToReturn);
+        $result = parent::__findOne('refright', array('_id' => new MongoId($id)), $fieldsToReturn);
         $result = self::convert($result);
 
         return $result;
     }
 
     /**
-     * - Retrouver l'ensemble des droits
+     * - Retrouver l'ensemble des refRights
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $fieldsToReturn champs à retourner
      * @since 11/03/2014
-     * @return array tableau d'objets Right
+     * @return array tableau d'objets RefRight
      */
 
     public function findAll($fieldsToReturn = array())
     {
-        $cursor = parent::__find('right', $fieldsToReturn);
+        $cursor = parent::__find('refright', $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
         {
-            $rights = array();
+            $refRights = array();
 
-            foreach($cursor as $right)
+            foreach($cursor as $refRight)
             {
-                $right = self::convert($right);
-                $rights[] = $right;
+                $refRight = self::convert($refRight);
+                $refRights[] = $refRight;
             }
         }
 
-        if(empty($rights))
-            return array('error' => 'No right found.');
+        if(empty($refRights))
+            return array('error' => 'No refRight found.');
         else
-            return $rights;
+            return $refRights;
     }
 
     /**
-     * - Retrouver un droit selon certains critères et le modifier/supprimer
-     * - Récupérer ce droit ou sa version modifiée
+     * - Retrouver un refRight selon certains critères et le modifier/supprimer
+     * - Récupérer cet refRight ou sa version modifiée
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $searchQuery critères de recherche
@@ -208,14 +190,14 @@ class RightManager extends AbstractManager implements RightManagerInterface{
         $searchQuery = self::reverseConvert($searchQuery);
         $updateCriteria = self::reverseConvert($updateCriteria);
 
-        $result = parent::__findAndModify('right', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
+        $result = parent::__findAndModify('refright', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
         return $result;
     }
 
     /**
-     * - Ajoute un droit en base de données
+     * - Ajoute un refRight en base de données
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $document
@@ -228,7 +210,7 @@ class RightManager extends AbstractManager implements RightManagerInterface{
     {
         $document = self::reverseConvert($document);
 
-        $result = parent::__create('right', $document, $options);
+        $result = parent::__create('refright', $document, $options);
 
         return $result;
     }
@@ -248,13 +230,13 @@ class RightManager extends AbstractManager implements RightManagerInterface{
         $criteria = self::reverseConvert($criteria);
         $update = self::reverseConvert($update);
 
-        $result = parent::__update('right', $criteria, $update, $options);
+        $result = parent::__update('refright', $criteria, $update, $options);
 
         return $result;
     }
 
     /**
-     * - Supprime un/des droit(s) correspondant à des critères données
+     * - Supprime un/des refRight(s) correspondant à des critères données
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $criteria ce qu'il faut supprimer
@@ -267,45 +249,8 @@ class RightManager extends AbstractManager implements RightManagerInterface{
     {
         $criteria = self::reverseConvert($criteria);
 
-        $result = parent::__remove('right', $criteria, $options);
+        $result = parent::__remove('refright', $criteria, $options);
 
         return $result;
-    }
-
-    /**
-     * Indique si l'utilisateur donné a les droits voulus sur l'élément donné
-     * @author Alban Truc
-     * @param MongoId|string $idUser
-     * @param MongoId|string $idElement
-     * @param string $refRightCode
-     * @since 15/05/2014
-     * @return bool
-     */
-
-    public function hasRightOnElement($idUser, $idElement, $refRightCode)
-    {
-        //récupérer l'id du refRight à partir du code
-        $refRightManager = new RefRightManager();
-
-        $refRightCriteria = array(
-            'state' => (int)1,
-            'code' => (string)$refRightCode
-        );
-
-        $refRight = $refRightManager->findOne($refRightCriteria);
-
-        //récupérer le droit
-        $rightCriteria = array(
-            'state' => (int)1,
-            'idUser' => new MongoId($idUser),
-            'idElement' => new MongoId($idElement),
-            'idRefRigt' => $refRight['_id']
-        );
-
-        $right = self::find($rightCriteria);
-
-        if(!(array_key_exists('error', $right)))
-            return TRUE;
-        else return FALSE;
     }
 }

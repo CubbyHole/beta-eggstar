@@ -3,27 +3,27 @@
  * Created by PhpStorm.
  * User: Crocell
  * Date: 25/04/14
- * Time: 15:18
+ * Time: 15:02
  */
 
 /** @var string $projectRoot chemin du projet dans le système de fichier */
-$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v2';
+$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v3';
 
 require_once $projectRoot.'/required.php';
 
 /**
- * Class RefRightManager
+ * Class RefElementManager
  * @author Alban Truc
  */
-class RefRightManager extends AbstractManager implements RefRightManagerInterface{
+class RefElementManager extends AbstractManager implements RefElementManagerInterface{
 
-    /** @var MongoCollection $refRightCollection collection refRight */
-    protected $refRightCollection;
+    /** @var MongoCollection $refElementCollection collection refElement */
+    protected $refElementCollection;
 
     /**
      * Constructeur:
      * - Appelle le constructeur de {@see AbstractManager::__construct} (gestion des accès de la BDD).
-     * - Initialise la collection refRight.
+     * - Initialise la collection refElement.
      * @author Alban Truc
      * @since 01/2014
      */
@@ -31,49 +31,49 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
     public function __construct()
     {
         parent::__construct();
-        $this->refRightCollection = $this->getCollection('refright');
+        $this->refElementCollection = $this->getCollection('refelement');
     }
 
     /**
      * Modifications de certaines données
      * @author Alban Truc
-     * @param array $refRight
+     * @param array $refElement
      * @since 30/04/2014
      * @return array
      */
 
-    public function convert($refRight)
+    public function convert($refElement)
     {
-        if(is_array($refRight))
+        if(is_array($refElement))
         {
-            if(isset($refRight['_id']))
-                $refRight['_id'] = (string)$refRight['_id']; // MongoId => string
+            if(isset($refElement['_id']))
+                $refElement['_id'] = (string)$refElement['_id']; // MongoId => string
         }
 
-        return $refRight;
+        return $refElement;
     }
 
     /**
-     * Conversion inverse de celle de la fonction ci-dessus
+     * Conversion inverse de la fonction ci-dessus
      * @author Alban Truc
-     * @param array $refRight
+     * @param array $refElement
      * @since 08/06/2014
      * @return array
      */
 
-    public function reverseConvert($refRight)
+    public function reverseConvert($refElement)
     {
-        if(is_array($refRight))
+        if(is_array($refElement))
         {
-            if(isset($refRight['_id']))
-                $refRight['_id'] = new MongoId($refRight['_id']); // string => MongoId
+            if(isset($refElement['_id']))
+                $refElement['_id'] = new MongoId($refElement['_id']); // MongoId => string
         }
 
-        return $refRight;
+        return $refElement;
     }
 
     /**
-     * Retrouver un refRight selon des critères donnés
+     * Retrouver un refElement selon des critères donnés
      * @author Alban Truc
      * @param array $criteria critères de recherche
      * @param array $fieldsToReturn champs à récupérer
@@ -85,28 +85,28 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
     {
         $criteria = self::reverseConvert($criteria);
 
-        $cursor = parent::__find('refright', $criteria, $fieldsToReturn);
+        $cursor = parent::__find('refelement', $criteria, $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
         {
-            $refRights = array();
+            $refElements = array();
 
-            foreach($cursor as $refRight)
+            foreach($cursor as $refElement)
             {
-                $refRight = self::convert($refRight);
-                $refRights[] = $refRight;
+                $refElement = self::convert($refElement);
+                $refElements[] = $refElement;
             }
 
-            if(empty($refRights))
+            if(empty($refElements))
                 return array('error' => 'No match found.');
             else
-                return $refRights;
+                return $refElements;
         }
         else return $cursor; //message d'erreur
     }
 
     /**
-     * Retourne le premier refRight correspondant au(x) critère(s) donné(s)
+     * Retourne le premier refElement correspondant au(x) critère(s) donné(s)
      * @author Alban Truc
      * @param array $criteria critère(s) de recherche
      * @param array $fieldsToReturn champs à retourner
@@ -118,17 +118,17 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
     {
         $criteria = self::reverseConvert($criteria);
 
-        $result = parent::__findOne('refright', $criteria, $fieldsToReturn);
+        $result = parent::__findOne('refelement', $criteria, $fieldsToReturn);
         $result = self::convert($result);
 
         return $result;
     }
 
     /**
-     * - Retrouver un refRight par son ID.
+     * - Retrouver un refElement par son ID.
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
-     * @param string|MongoId $id Identifiant unique de l'refRight à trouver
+     * @param string|MongoId $id Identifiant unique de l'refElement à trouver
      * @param array $fieldsToReturn champs à retourner
      * @since 02/2014
      * @return array contenant le message d'erreur
@@ -136,45 +136,45 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
 
     public function findById($id, $fieldsToReturn = array())
     {
-        $result = parent::__findOne('refright', array('_id' => new MongoId($id)), $fieldsToReturn);
+        $result = parent::__findOne('refelement', array('_id' => new MongoId($id)), $fieldsToReturn);
         $result = self::convert($result);
 
         return $result;
     }
 
     /**
-     * - Retrouver l'ensemble des refRights
+     * - Retrouver l'ensemble des refElements
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $fieldsToReturn champs à retourner
      * @since 11/03/2014
-     * @return array tableau d'objets RefRight
+     * @return array tableau d'objets RefElement
      */
 
     public function findAll($fieldsToReturn = array())
     {
-        $cursor = parent::__find('refright', $fieldsToReturn);
+        $cursor = parent::__find('refelement', $fieldsToReturn);
 
         if(!(is_array($cursor)) && !(array_key_exists('error', $cursor)))
         {
-            $refRights = array();
+            $refElements = array();
 
-            foreach($cursor as $refRight)
+            foreach($cursor as $refElement)
             {
-                $refRight = self::convert($refRight);
-                $refRights[] = $refRight;
+                $refElement = self::convert($refElement);
+                $refElements[] = $refElement;
             }
         }
 
-        if(empty($refRights))
-            return array('error' => 'No refRight found.');
+        if(empty($refElements))
+            return array('error' => 'No refElement found.');
         else
-            return $refRights;
+            return $refElements;
     }
 
     /**
-     * - Retrouver un refRight selon certains critères et le modifier/supprimer
-     * - Récupérer cet refRight ou sa version modifiée
+     * - Retrouver un refElement selon certains critères et le modifier/supprimer
+     * - Récupérer cet refElement ou sa version modifiée
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $searchQuery critères de recherche
@@ -190,14 +190,14 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
         $searchQuery = self::reverseConvert($searchQuery);
         $updateCriteria = self::reverseConvert($updateCriteria);
 
-        $result = parent::__findAndModify('refright', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
+        $result = parent::__findAndModify('refelement', $searchQuery, $updateCriteria, $fieldsToReturn, $options);
         $result = self::convert($result);
 
         return $result;
     }
 
     /**
-     * - Ajoute un refRight en base de données
+     * - Ajoute un refElement en base de données
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $document
@@ -210,7 +210,7 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
     {
         $document = self::reverseConvert($document);
 
-        $result = parent::__create('refright', $document, $options);
+        $result = parent::__create('refelement', $document, $options);
 
         return $result;
     }
@@ -230,13 +230,13 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
         $criteria = self::reverseConvert($criteria);
         $update = self::reverseConvert($update);
 
-        $result = parent::__update('refright', $criteria, $update, $options);
+        $result = parent::__update('refelement', $criteria, $update, $options);
 
         return $result;
     }
 
     /**
-     * - Supprime un/des refRight(s) correspondant à des critères données
+     * - Supprime un/des refElement(s) correspondant à des critères données
      * - Gestion des exceptions et des erreurs
      * @author Alban Truc
      * @param array $criteria ce qu'il faut supprimer
@@ -249,7 +249,7 @@ class RefRightManager extends AbstractManager implements RefRightManagerInterfac
     {
         $criteria = self::reverseConvert($criteria);
 
-        $result = parent::__remove('refright', $criteria, $options);
+        $result = parent::__remove('refelement', $criteria, $options);
 
         return $result;
     }

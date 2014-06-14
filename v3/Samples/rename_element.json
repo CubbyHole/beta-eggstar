@@ -1,0 +1,27 @@
+{
+    "operationSuccess": true, "elementsImpacted":
+    [
+        {
+            "_id": "539c7e7809413a780e00002d",
+            "state": 1,
+            "name": "azerty",
+            "idOwner": "536749adedb5025416000029",
+            "idRefElement": "53639f93edb5021808000074",
+            "serverPath": "\/Nestbox\/",
+            "downloadLink": ""
+        }
+    ],
+    "updatedElements":
+    [
+        {
+            "_id": "539c7e7809413a780e00002d",
+            "state": 1,
+            "name": "bonjour",
+            "idOwner": "536749adedb5025416000029",
+            "idRefElement": "53639f93edb5021808000074",
+            "serverPath": "\/Nestbox\/",
+            "downloadLink": ""
+        }
+    ],
+    "failedToUpdate": "No fail or the function had an error before trying to."
+}

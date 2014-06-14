@@ -82,7 +82,7 @@ class Eggstar extends API
      *          Le mot de passe doit être envoyé déjà chiffré.
      * L'inscritpion et l'authentification retournent les informations de l'utilisateur, son compte et son refplan;
      * le tout en json.
-     * Exemple de retour: cf. auth_login_return.json dans le dossier Samples.
+     * Exemple de retour: cf. auth_login_return_v2.json.json dans le dossier Samples.
      */
 
     protected function users()

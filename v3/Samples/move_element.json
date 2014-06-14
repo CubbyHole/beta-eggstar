@@ -1,0 +1,27 @@
+{
+    "operationSuccess": true, "elementsImpacted":
+    [
+        {
+            "_id": "539c7e7809413a780e00002d",
+            "downloadLink": "",
+            "idOwner": "536749adedb5025416000029",
+            "idRefElement": "53639f93edb5021808000074",
+            "name": "bonjour",
+            "serverPath": "\/Nestbox\/",
+            "state": 1
+        }
+    ],
+    "movedElements":
+    [
+        {
+            "_id": "539c7e7809413a780e00002d",
+            "downloadLink": "",
+            "idOwner": "536749adedb5025416000029",
+            "idRefElement": "53639f93edb5021808000074",
+            "name": "bonjour",
+            "serverPath": "\/Nestbox - test\/",
+            "state": 1
+        }
+    ],
+    "failedToMove": "No fail or the function had an error before trying to."
+}

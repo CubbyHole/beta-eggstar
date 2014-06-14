@@ -6,10 +6,10 @@
  * Time: 09:58
  */
 
-$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v2';
+$projectRoot = $_SERVER['DOCUMENT_ROOT'].'/eggstar/v3';
 require_once $projectRoot.'/required.php';
 
-define('PATH', $_SERVER['DOCUMENT_ROOT'].'/Nestbox');
+define('PATH', $_SERVER['DOCUMENT_ROOT'].'/Nestbox/');
 
 /**
  * Crée un objet DirectoryIterator

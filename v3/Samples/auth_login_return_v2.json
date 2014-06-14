@@ -1,0 +1,37 @@
+{
+    "_id": "536749adedb5025416000029",
+    "apiKey": "F85AA8296D9B4B25AE8CAEC1FBE777",
+    "email": "cubbyhole@orange.fr",
+    "firstName": "Test",
+    "geolocation": "Not specified",
+    "isAdmin": false,
+    "lastName": "Test",
+    "password": "45a9b2f528fcb737f639b43db720c34b5dd8a6f2",
+    "state": 1,
+    "account": {
+        "_id": "5350ece509413aec15000032",
+        "endDate": {
+            "timestamp": 1400404453,
+            "date": "2014-May-18",
+            "time": "09:14:13"
+        },
+        "ratio": 0,
+        "startDate": {
+            "timestamp": 1397812453,
+            "date": "2014-Apr-18",
+            "time": "09:14:13"
+        },
+        "state": 1,
+        "storage": 1748,
+        "refPlan": {
+            "_id": "52eb5e743263d8b6a4395df0",
+            "downloadSpeed": 300,
+            "maxRatio": 2,
+            "maxStorage": 5120,
+            "name": "Free",
+            "price": 0,
+            "state": 1,
+            "uploadSpeed": 30
+        }
+    }
+}

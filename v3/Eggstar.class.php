@@ -68,13 +68,13 @@ class Eggstar extends API
      * Utilisation:
      * localhost doit être remplacé par l'url du serveur.
      *  AUTHENTIFICATION:
-     *      GET http://localhost:8080/eggstar/v2/users?email=125637@supinfo.com&password=zfije5rçf_heofuhf
+     *      GET http://localhost:8080/eggstar/v3/users?email=125637@supinfo.com&password=zfije5rçf_heofuhf
      *          Ici endpoint = users et il n'y a rien dans args.
      *          Les valeurs d'email et password sont stockées dans le tableau request.
      *          Il faut envoyer le password déjà chiffré.
      * L'inscritpion retourne les informations de l'utilisateur, son compte et son refplan;
      * le tout en json.
-     * Exemple de retour: cf. auth_login_return_v1.json dans le dossier Samples.
+     * Exemple de retour: cf. auth_login_return_v2.json.json dans le dossier Samples.
      */
 
     protected function users()
@@ -129,7 +129,7 @@ class Eggstar extends API
                     else $path = 'all';
 
                     $elements = $elementManager->returnElementsDetails($idUser, $isOwner, $path, $elementName);
-
+return $elements;
                     if(array_key_exists('error', $elements))
                         /*
                          * array de array pour faciliter l'exploitation du retour
