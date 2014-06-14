@@ -6,6 +6,58 @@
  * Time: 22:23
  */
 
+function findSharesForElement($idElement, $idUser)
+{
+    $idElement = new MongoId($idElement);
+    $idUser = new MongoId($idUser);
+
+    //vérification de l'existence de l'élément
+    $elementManager = new ElementManager();
+
+    $element = $elementManager->findById($idElement);
+
+    if(array_key_exists('error', $element))
+        return $element;
+
+    if($element['idOwner'] != $idUser)
+        return array('error' => 'You need to be the owner of the file to get sharing information on it.');
+
+    $rightManager = new RightManager();
+
+    $rightCriteria = array(
+        'state' => (int)1,
+        'idElement' => $idElement
+    );
+
+    $rights = $rightManager->find($rightCriteria);
+
+    $userManager = new UserManager();
+    $refRightManager = new RefRightManager();
+
+    $userFieldsToReturn = array('email' => TRUE);
+    $refRightFieldsToReturn = array('code' => TRUE);
+    $user = $refRight = NULL;
+
+    foreach($rights as  $key => $right)
+    {
+        $user = $userManager->findById($right['idUser'], $userFieldsToReturn);
+        $refRight = $refRightManager->findById($right['idRefRight'], $refRightFieldsToReturn);
+
+        if(array_key_exists('error', $user) || array_key_exists('error', $refRight))
+            unset($rights[$key]);
+
+        unset($rights[$key]['idUser']);
+        unset($rights[$key]['idRefRight']);
+        $rights[$key]['user'] = $user;
+        $rights[$key]['refRight'] = $refRight;
+    }
+
+    if(empty($rights))
+        return array('error' => 'No righ found for the element');
+    else
+        return $rights;
+}
+
 /**
  * Partage (lecture ou lecture et écriture) d'un élément avec un autre utilisateur
  * @author Alban Truc
