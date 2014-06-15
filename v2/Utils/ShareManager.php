@@ -198,3 +198,76 @@ function shareWithUser($idElement, $idOwner, $recipientEmail, $refRightCode, $se
     }
     else return $element;
 }
+
+/**
+ * Permet de désactiver les droits d'un élément pour un user, gestion récursive pour les dossiers.
+ * @author Harry Bellod & Alban Truc
+ * @param string|MongoId $idElement  id de l'élément qu'on veut désactiver
+ * @param string|MongoId $idUser  id de l'utilisateur concerné
+ * @param string|MongoId $idOwner  id du propriétaire de l'élément
+ * @since 15/06/2014
+ * @return bool|array contenant un message d'erreur
+ */
+
+function disableShareRights($idElement, $idUser, $idOwner)
+{
+    $idElement = new MongoId($idElement);
+    $idUser = new MongoId($idUser);
+    $idOwner = new MongoId($idOwner);
+
+    $elementManager = new ElementPdoManager();
+    $refElementManager = new RefElementPdoManager();
+    $rightPdoManager = new RightPdoManager();
+
+    $element = $elementManager->findById($idElement);
+    $refElement = $refElementManager->findById($element['idRefElement']);
+    $idRefElement = $refElement['_id'];
+
+    /** @var  $isFolder => bool, true si l'élément est bien un dossier, sinon false */
+    $isFolder = isFolder($idRefElement);
+
+    if(is_bool($isFolder) && $isFolder == TRUE)
+    {
+        $serverPath = $element['serverPath'].$element['name'].'/';
+
+        //récupération des éléments contenus dans le dossier
+        $seekElementsInFolder = array(
+            'state' => (int)1,
+            'serverPath' => new MongoRegex("/^$serverPath/i"),
+            'idOwner' => $idOwner
+        );
+
+        //liste des éléments contenus dans le dossier
+        $elementsInFolder = $elementManager->find($seekElementsInFolder);
+        foreach($elementsInFolder as $subElement)
+        {
+            $rightCriteria = array(
+                'state' => (int) 1,
+                'idElement' => new MongoId($subElement['_id']),
+                'idUser' => $idUser
+            );
+
+            $rightUpdate = array(
+                '$set' => array( 'state' => (int) 0)
+            );
+
+            //pour chaque élément on désactive le droit qui lui était affecté
+            $disableElementsInFolder = $rightPdoManager->update($rightCriteria, $rightUpdate);
+            if(is_bool($disableElementsInFolder) && $disableElementsInFolder != TRUE)
+                return array('error' => 'No match found.');
+        }
+    }
+
+    $rightCriteria = array(
+        'state' => (int) 1,
+        'idElement' => $idElement,
+        'idUser' => $idUser
+    );
+    $rightUpdate = array(
+        '$set' => array( 'state' => (int) 0)
+    );
+    //désactivation de l'élément parent
+    $disableParent = $rightPdoManager->update($rightCriteria, $rightUpdate);
+    if(is_bool($disableParent) && $disableParent != TRUE)
+        return array('error' => 'No match found.');
+}

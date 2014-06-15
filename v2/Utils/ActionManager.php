@@ -37,6 +37,9 @@ function handleActions($request)
             case 'shareWithUser':
                 return shareWithUser($request['idElement'], $request['idUser'], $request['email'], $request['code']);
                 break;
+            case 'disableRight':
+                return disableShareRights($request['idElement'], $request['idUser'], $request['idOwner']);
+                break;
             case 'anonymousShare':
                 break;
         }
