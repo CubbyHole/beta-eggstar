@@ -380,11 +380,12 @@ class ElementManager extends AbstractManager implements ElementManagerInterface{
 
                 unset($right['idElement']);
                 $element = self::findOne($elementCriteria);
-                $idOwner = $element['idOwner'];
-                unset($element['idOwner']);
 
                 if(is_array($element) && !(array_key_exists('error', $element)))
                 {
+                    $idOwner = $element['idOwner'];
+                    unset($element['idOwner']);
+
                     //récupération du refElement. On enlève le droit de la liste si le refElement n'est pas trouvé
                     $refElement = $refElementManager->findById($element['idRefElement']);
                     unset($element['idRefElement']);
