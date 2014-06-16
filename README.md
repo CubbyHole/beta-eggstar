@@ -2,6 +2,7 @@ Beta Eggstar API
 ============
 Dernière màj le 21/02/2014 par A.T.
 
+Readme non à jour, préférez le guide d'utilisation Eggstar si disponible.
 <ul>
   <li><a href="#preambule">Préambule</a></li>
   <li><a href="#restful-urls">RESTful URLs</a>
