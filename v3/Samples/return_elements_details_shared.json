@@ -1,0 +1,34 @@
+[
+    {
+        "_id": "539c8efe09413a380e000037",
+        "state": 1,
+        "element": {
+            "_id": "539c8efe09413a380e000035",
+            "downloadLink": "",
+            "hash": "4b5fe48b6de118e059f5b2b987ba3e224352e57d",
+            "name": "carte",
+            "serverPath": "/",
+            "size": 8,
+            "state": 1,
+            "refElement": {
+                "_id": "53639f93edb502180800006b",
+                "state": 1,
+                "code": "2301",
+                "description": "Image File",
+                "extension": ".gif",
+                "imagePath": "./content/img/icon_gif.png"
+            }
+        },
+        "owner": {
+            "_id": "536749adedb5025416000029",
+            "firstName": "Test",
+            "lastName": "Test"
+        },
+        "refRight": {
+            "_id": "5361801e02008f3c200000ed",
+            "state": 1,
+            "code": "11",
+            "description": "Read and Write"
+        }
+    }
+]

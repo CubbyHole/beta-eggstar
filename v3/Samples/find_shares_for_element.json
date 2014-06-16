@@ -1,0 +1,28 @@
+[
+    {
+        "_id": "539c8efe09413a380e000037",
+        "idElement": "539c8efe09413a380e000035",
+        "state": 1,
+        "user": {
+            "_id": "536749adedb5025416000029",
+            "email": "cubbyhole@orange.fr"
+        },
+        "refRight": {
+            "_id": "5361801e02008f3c200000ed",
+            "code": "11"
+        }
+    },
+    {
+        "_id": "539cb94709413a380e000039",
+        "idElement": "539c8efe09413a380e000035",
+        "state": 1,
+        "user": {
+            "_id": "534f199509413a342700002b",
+            "email": "cubbyhole@live.fr"
+        },
+        "refRight": {
+            "_id": "5361801e02008f3c200000ed",
+            "code": "11"
+        }
+    }
+]

@@ -12,9 +12,7 @@
     ],
     "pastedElements": [
         {
-            "_id": {
-                "$id": "539c7dd809413a780e00002c"
-            },
+            "_id": "539c7dd809413a780e00002c",
             "state": 1,
             "name": "azerty",
             "idOwner": "536749adedb5025416000029",

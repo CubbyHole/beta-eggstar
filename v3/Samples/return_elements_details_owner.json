@@ -1,0 +1,202 @@
+[
+    {
+        "_id": "539c8efe09413a380e000032",
+        "state": 1,
+        "name": "suivi de projet",
+        "serverPath": "/Nestbox/",
+        "size": 1461,
+        "hash": "72a977e72d0071aadd852a4b59cf09fd38a0f7a7",
+        "downloadLink": "",
+        "refElement": {
+            "_id": "53639f93edb5021808000058",
+            "state": 1,
+            "code": "1000",
+            "description": "Office File",
+            "extension": ".doc",
+            "imagePath": "./content/img/icon_word.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e000033",
+        "state": 1,
+        "name": "liens upload",
+        "serverPath": "/Nestbox/",
+        "size": 1503,
+        "hash": "95d0efe65559f193ad6fcd1d3ab97669f0215185",
+        "downloadLink": "",
+        "refElement": {
+            "_id": "53639f93edb5021808000058",
+            "state": 1,
+            "code": "1000",
+            "description": "Office File",
+            "extension": ".doc",
+            "imagePath": "./content/img/icon_word.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e000034",
+        "state": 1,
+        "name": "Explorateur de fichier",
+        "serverPath": "/Nestbox/",
+        "size": 443,
+        "hash": "c16fdd4d8507e3c2ce1260606ff5dd1db25218df",
+        "downloadLink": "",
+        "refElement": {
+            "_id": "53639f93edb5021808000058",
+            "state": 1,
+            "code": "1000",
+            "description": "Office File",
+            "extension": ".doc",
+            "imagePath": "./content/img/icon_word.png"
+        }
+    },
+    {
+        "_id": "539d6e3109413a380e00003a",
+        "downloadLink": "",
+        "hash": "4b5fe48b6de118e059f5b2b987ba3e224352e57d",
+        "name": "tata",
+        "serverPath": "/",
+        "size": 5723947,
+        "state": 1,
+        "refElement": {
+            "_id": "53639f93edb5021808000066",
+            "state": 1,
+            "code": "2200",
+            "description": "Video File",
+            "extension": ".avi",
+            "imagePath": "./content/img/icon_avi.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e000035",
+        "downloadLink": "",
+        "hash": "4b5fe48b6de118e059f5b2b987ba3e224352e57d",
+        "name": "carte",
+        "serverPath": "/",
+        "size": 8,
+        "state": 1,
+        "refElement": {
+            "_id": "53639f93edb502180800006b",
+            "state": 1,
+            "code": "2301",
+            "description": "Image File",
+            "extension": ".gif",
+            "imagePath": "./content/img/icon_gif.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e00002b",
+        "state": 1,
+        "name": "Croquis Nestbox",
+        "serverPath": "/Nestbox/IMG/",
+        "size": 437,
+        "hash": "7e05d56a79d584acd3427930fe4ee42458526324",
+        "downloadLink": "",
+        "refElement": {
+            "_id": "53639f93edb502180800006f",
+            "state": 1,
+            "code": "2305",
+            "description": "Image File",
+            "extension": ".jpg",
+            "imagePath": "./content/img/icon_jpg.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e000029",
+        "state": 1,
+        "name": "Nestbox - test",
+        "serverPath": "/",
+        "refElement": {
+            "_id": "53639f93edb5021808000074",
+            "state": 1,
+            "code": "4002",
+            "description": "Directory File (empty)",
+            "extension": "DIR",
+            "imagePath": "./content/img/icon_dir_empty.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e00002c",
+        "state": 1,
+        "name": "code",
+        "serverPath": "/Nestbox/",
+        "refElement": {
+            "_id": "53639f93edb5021808000075",
+            "state": 1,
+            "code": "4003",
+            "description": "Directory File (not empty)",
+            "extension": "DIR",
+            "imagePath": "./content/img/icon_dir_not_empty.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e00002a",
+        "state": 1,
+        "name": "IMG",
+        "serverPath": "/Nestbox/",
+        "refElement": {
+            "_id": "53639f93edb5021808000075",
+            "state": 1,
+            "code": "4003",
+            "description": "Directory File (not empty)",
+            "extension": "DIR",
+            "imagePath": "./content/img/icon_dir_not_empty.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e000030",
+        "state": 1,
+        "name": "css",
+        "serverPath": "/Nestbox/code/",
+        "refElement": {
+            "_id": "53639f93edb5021808000075",
+            "state": 1,
+            "code": "4003",
+            "description": "Directory File (not empty)",
+            "extension": "DIR",
+            "imagePath": "./content/img/icon_dir_not_empty.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e00002d",
+        "state": 1,
+        "name": "js",
+        "serverPath": "/Nestbox/code/",
+        "refElement": {
+            "_id": "53639f93edb5021808000075",
+            "state": 1,
+            "code": "4003",
+            "description": "Directory File (not empty)",
+            "extension": "DIR",
+            "imagePath": "./content/img/icon_dir_not_empty.png"
+        }
+    },
+    {
+        "_id": "5392061f09413a1021000041",
+        "state": 1,
+        "name": "Nestbox",
+        "serverPath": "/",
+        "refElement": {
+            "_id": "53639f93edb5021808000075",
+            "state": 1,
+            "code": "4003",
+            "description": "Directory File (not empty)",
+            "extension": "DIR",
+            "imagePath": "./content/img/icon_dir_not_empty.png"
+        }
+    },
+    {
+        "_id": "539c8efe09413a380e00002e",
+        "state": 1,
+        "name": "front",
+        "serverPath": "/Nestbox/code/js/",
+        "refElement": {
+            "_id": "53639f93edb5021808000075",
+            "state": 1,
+            "code": "4003",
+            "description": "Directory File (not empty)",
+            "extension": "DIR",
+            "imagePath": "./content/img/icon_dir_not_empty.png"
+        }
+    }
+]
